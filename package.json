@@ -1,0 +1,23 @@
+{
+  "name": "dr-akshath-backend",
+  "description": "Node.js backend server for Dr Akshath portfolio APIs",
+  "scripts": {
+    "lint": "echo skipping lint",
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "@getbrevo/brevo": "^4.0.1",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.7.0"
+  },
+  "private": true
+}
