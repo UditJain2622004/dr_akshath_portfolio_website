@@ -1,0 +1,144 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --navy: #07192e;
+  --teal: #0f8c7a;
+  --teal-light: #1bbfa8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: "Outfit", system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Reveal animation ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-d1 { transition-delay: 0.1s; }
+.reveal-d2 { transition-delay: 0.2s; }
+.reveal-d3 { transition-delay: 0.3s; }
+.reveal-d4 { transition-delay: 0.4s; }
+
+/* ── Hero animations ── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slowZoom {
+  from { transform: scale(1.08); }
+  to   { transform: scale(1.02); }
+}
+@keyframes pulseDot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.55; transform: scale(0.82); }
+}
+@keyframes bounceArrow {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(5px); }
+}
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.anim-nav     { animation: fadeDown 0.8s ease both; }
+.anim-up-1    { animation: fadeUp  0.7s 0.3s ease both; }
+.anim-up-2    { animation: fadeUp  0.7s 0.4s ease both; }
+.anim-up-3    { animation: fadeUp  0.7s 0.5s ease both; }
+.anim-up-4    { animation: fadeUp  0.7s 0.6s ease both; }
+.anim-up-5    { animation: fadeUp  0.7s 0.7s ease both; }
+.anim-up-6    { animation: fadeUp  0.7s 0.8s ease both; }
+.anim-left    { animation: fadeLeft 0.8s 0.9s ease both; }
+.anim-bottom  { animation: fadeUp  0.7s 1s ease both; }
+.anim-zoom    { animation: slowZoom 18s ease-out both; }
+.anim-pulse   { animation: pulseDot 2s infinite; }
+.anim-bounce  { animation: bounceArrow 2s infinite; }
+.anim-ticker  { animation: tickerScroll 25s linear infinite; }
+
+/* ── Service panel hover zoom ── */
+.svc-panel-bg {
+  transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.svc-panel:hover .svc-panel-bg {
+  transform: scale(1.06);
+}
+
+/* ── Time slot ── */
+.time-slot {
+  background: #f7faf9;
+  border: 1px solid rgba(15,140,122,0.2);
+  border-radius: 6px;
+  padding: 9px 6px;
+  text-align: center;
+  font-size: 12px;
+  color: #3a5068;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  font-family: "Outfit", sans-serif;
+}
+.time-slot:hover:not(.disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: rgba(15,140,122,0.05);
+}
+.time-slot.selected {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+  font-weight: 500;
+}
+.time-slot.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Form inputs ── */
+.form-input {
+  background: #f7faf9;
+  border: 1px solid rgba(15,140,122,0.18);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  color: #0e2237;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.form-input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15,140,122,0.1);
+  background: #fff;
+}
+
+/* ── Praise ticker ── */
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  animation: tickerScroll 25s linear infinite;
+  white-space: nowrap;
+}
