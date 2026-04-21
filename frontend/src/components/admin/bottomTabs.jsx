@@ -3,10 +3,10 @@ import { T, I } from './theme.jsx';
 
 const BottomBar = ({ page, setPage }) => {
     const tabs = [
-        { id: "home", icon: "home", label: "Home" },
+        { id: "home", icon: "home", label: "Dashboard" },
         { id: "schedule", icon: "calendar", label: "Schedule" },
-        { id: "pending", icon: "pending", label: "Pending" },
-        { id: "history", icon: "history", label: "History" },
+        { id: "pending", icon: "bell", label: "Requests" },
+        { id: "profile", icon: "user", label: "Profile" },
     ];
     return (
         <div style={{ background: T.white, borderTop: `1px solid ${T.mint}` }}>

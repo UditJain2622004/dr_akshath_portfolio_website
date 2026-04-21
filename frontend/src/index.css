@@ -142,3 +142,17 @@ html, body {
   animation: tickerScroll 25s linear infinite;
   white-space: nowrap;
 }
+
+
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.appointment-time{
+  font-variant-numeric: tabular-nums;
+}
