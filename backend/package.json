@@ -6,7 +6,8 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "backfill:clinic-id": "node scripts/backfillClinicId.js",
-    "seed:init": "node scripts/seedInitialData.js"
+    "seed:init": "node scripts/seedInitialData.js",
+    "seed:demo": "node scripts/seedDemoData.js"
   },
   "type": "module",
   "engines": {

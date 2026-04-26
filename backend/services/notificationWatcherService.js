@@ -73,5 +73,15 @@ export function initializeNotificationWatchers() {
     return;
   }
 
-  watchAppointmentsForNotifications();
+  // Delay to ensure Firestore client is fully ready
+  setTimeout(async () => {
+    console.log("[Notification] Starting appointments watcher...");
+    try {
+      // Warm up the client with a simple query
+      await db.collection(COLLECTIONS.appointments).limit(1).get();
+      watchAppointmentsForNotifications();
+    } catch (err) {
+      console.error("[Notification] Watcher warm-up failed:", err.message);
+    }
+  }, 2000);
 }

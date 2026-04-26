@@ -12,7 +12,11 @@ export default async function handler(req, res) {
   if (!date || !isValidDate(date)) return sendError(res, 400, 'Valid date (YYYY-MM-DD) is required');
 
   try {
-    const snapshot = await db.collection('appointments').where('appointmentDate', '==', date).get();
+    const [snapshot, backlogSnapshot] = await Promise.all([
+      db.collection('appointments').where('appointmentDate', '==', date).get(),
+      db.collection('appointments').where('status', '==', 'pending').get()
+    ]);
+
     const appointments = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     const totals = {
@@ -22,6 +26,10 @@ export default async function handler(req, res) {
       cancelled: appointments.filter((a) => a.status === 'cancelled').length,
       completed: appointments.filter((a) => a.status === 'completed').length,
       rejected: appointments.filter((a) => a.status === 'rejected').length,
+    };
+
+    const backlog = {
+      pending: backlogSnapshot.size
     };
 
     const byClinic = {};
@@ -48,6 +56,7 @@ export default async function handler(req, res) {
     return sendSuccess(res, {
       date,
       totals,
+      backlog,
       byClinic: Object.values(byClinic),
     });
   } catch (error) {

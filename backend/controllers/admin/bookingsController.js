@@ -62,10 +62,10 @@ async function handleDelete(req, res) {
 }
 
 async function handleGet(req, res) {
-  const result = await verifyAuth(req);
-  if (result.error) return sendError(res, result.status, result.error);
+  const auth = await verifyAuth(req);
+  if (auth.error) return sendError(res, auth.status, auth.error);
 
-  const { clinicId, dateFrom, dateTo, status, patientPhone } = req.query;
+  const { clinicId, dateFrom, dateTo, status, patientPhone, limit = 50, lastId } = req.query;
 
   try {
     let query = db.collection('appointments');
@@ -99,7 +99,18 @@ async function handleGet(req, res) {
       return (a.timeSlot || '').localeCompare(b.timeSlot || '');
     });
 
-    const clinicIds = [...new Set(bookings.map((b) => b.clinicId).filter(Boolean))];
+    // Pagination logic
+    let startIndex = 0;
+    if (lastId) {
+      const idx = bookings.findIndex(b => b.id === lastId);
+      if (idx !== -1) startIndex = idx + 1;
+    }
+
+    const pageSize = parseInt(limit);
+    const paginated = bookings.slice(startIndex, startIndex + pageSize);
+    const hasMore = startIndex + pageSize < bookings.length;
+
+    const clinicIds = [...new Set(paginated.map((b) => b.clinicId).filter(Boolean))];
     const clinicNames = {};
 
     if (clinicIds.length > 0) {
@@ -109,12 +120,16 @@ async function handleGet(req, res) {
       });
     }
 
-    bookings = bookings.map((b) => ({
+    const resultBookings = paginated.map((b) => ({
       ...b,
       clinicName: clinicNames[b.clinicId] || b.clinicId,
     }));
 
-    return sendSuccess(res, { bookings });
+    return sendSuccess(res, { 
+      bookings: resultBookings,
+      hasMore,
+      totalCount: bookings.length 
+    });
   } catch (error) {
     console.error('Error in GET /api/admin/bookings:', error);
     return sendError(res, 500, `Internal server error: ${error.message}`);

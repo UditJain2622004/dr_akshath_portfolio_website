@@ -1,6 +1,11 @@
 import { initializeApp, getApps, cert, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { readFileSync, existsSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 let _app = null;
 let _db = null;
@@ -22,26 +27,33 @@ function getAdminApp() {
     ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
     : null;
 
+  // 1. Local serviceAccountKey.json (Highest priority for local dev)
+  const keyPath = resolve(__dirname, '../serviceAccountKey.json');
+  if (existsSync(keyPath)) {
+    console.log('Firebase: Initializing via local serviceAccountKey.json');
+    const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'));
+    _app = initializeApp({ credential: cert(serviceAccount) });
+    return _app;
+  }
+
+  // 2. Explicit environment variables
   if (projectId && clientEmail && privateKey) {
+    console.log('Firebase: Initializing via environment variables');
     _app = initializeApp({
-      credential: cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
+      credential: cert({ projectId, clientEmail, privateKey }),
     });
     return _app;
   }
 
+  // 3. Google Application Default Credentials
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    _app = initializeApp({
-      credential: applicationDefault(),
-    });
+    console.log('Firebase: Initializing via GOOGLE_APPLICATION_CREDENTIALS');
+    _app = initializeApp({ credential: applicationDefault() });
     return _app;
   }
 
   throw new Error(
-    'Firebase Admin credentials are missing. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY (or GOOGLE_APPLICATION_CREDENTIALS).'
+    'Firebase Admin credentials are missing. Place serviceAccountKey.json in the backend root or set appropriate environment variables.'
   );
 }
 
