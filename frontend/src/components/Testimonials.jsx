@@ -9,7 +9,7 @@ const reviews = [
         age: "58",
         rating: 5,
         platform: "Google",
-        text: "Dr. Mehta performed my angioplasty with absolute precision. What amazed me most was how clearly he explained every step beforehand — I was nervous, but he made me feel completely safe. I was back home in three days and feel like a new person.",
+        text: "Dr. Akshath was attentive, explained the plan clearly, and guided me through the next steps with confidence. The consultation was thorough and reassuring.",
         featured: true,
     },
     {
@@ -19,7 +19,7 @@ const reviews = [
         location: "Dubai, UAE",
         rating: 5,
         platform: "Practo",
-        text: "I consulted Dr. Mehta via video from Dubai for a second opinion on my father's heart failure diagnosis. He reviewed all the reports overnight and called us personally the next morning. That level of care is rare anywhere in the world.",
+        text: "We consulted Dr. Akshath via video for a second opinion. He reviewed the reports carefully and explained the treatment options in simple terms.",
         featured: false,
     },
     {
@@ -30,7 +30,7 @@ const reviews = [
         age: "64",
         rating: 5,
         platform: "Google",
-        text: "After years of dealing with chronic heart failure, I finally found a doctor who truly listens. Dr. Mehta redesigned my entire treatment plan and within 3 months my ejection fraction had improved significantly. Exceptional physician.",
+        text: "After months of uncertainty, I finally found a doctor who truly listens. Dr. Akshath clarified my concerns and suggested a practical plan for follow-up and prevention.",
         featured: false,
     },
     // {
@@ -41,7 +41,7 @@ const reviews = [
     //     age: "45",
     //     rating: 5,
     //     platform: "Practo",
-    //     text: "Dr. Mehta caught a structural defect that two other cardiologists had missed. His attention to detail during the echocardiography was thorough and he explained everything with patience. The only cardiologist I'd refer my family to.",
+    //     text: "Dr. Akshath identified what others had missed. His attention to detail during the assessment was thorough and he explained everything with patience.",
     //     featured: false,
     // },
     // {
@@ -51,7 +51,7 @@ const reviews = [
     //     location: "Abu Dhabi, UAE",
     //     rating: 5,
     //     platform: "Google",
-    //     text: "I flew to Bengaluru specifically for Dr. Mehta's consultation. The TAVR procedure went flawlessly and the post-operative follow-up via video has been seamless. For Gulf patients seeking world-class cardiac care, look no further.",
+    //     text: "I traveled for Dr. Akshath's consultation. The follow-up plan was clear and the remote check-ins were seamless.",
     //     featured: false,
     // },
 ];
@@ -177,7 +177,7 @@ export default function Testimonials() {
                 </svg>
             </div>
 
-            <div className="max-w-[1280px] mx-auto px-[60px] pt-[110px] pb-0">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[60px] pt-16 sm:pt-20 lg:pt-[110px] pb-0">
 
                 {/* ── Header ── */}
                 <div className="reveal flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14" ref={ref}>
@@ -190,7 +190,7 @@ export default function Testimonials() {
                         </div>
                         <h2 className="font-display text-[clamp(30px,4vw,48px)] text-navy leading-[1.1] font-bold">
                             Trusted by{" "}
-                            <em className="not-italic italic" style={{ color: "#0f8c7a" }}>hundreds</em>
+                            <em className="italic" style={{ color: "#0f8c7a" }}>hundreds</em>
                             {" "}of patients
                         </h2>
                     </div>
@@ -217,11 +217,11 @@ export default function Testimonials() {
                 </div>
 
                 {/* ── Featured + grid ── */}
-                <div className="reveal reveal-d1 grid gap-5" style={{ gridTemplateColumns: "1.1fr 1fr 1fr" }}>
+                <div className="reveal reveal-d1 grid gap-5 grid-cols-1 lg:grid-cols-3">
 
                     {/* Featured — tall card */}
                     <div
-                        className="row-span-2 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden"
+                        className="lg:row-span-2 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden"
                         style={{
                             background: "linear-gradient(160deg, #07192e 0%, #0a2d45 100%)",
                             boxShadow: "0 20px 60px rgba(7,25,46,0.2)",

@@ -189,7 +189,7 @@ export default function Services() {
     const ref = useReveal();
 
     return (
-        <section id="services" className="relative overflow-hidden py-[110px]" style={{ background: "#f4f9f8" }}>
+        <section id="services" className="relative overflow-hidden py-16 sm:py-20 lg:py-[110px]" style={{ background: "#f4f9f8" }}>
 
             {/* ── Background decorations ── */}
             <div className="absolute top-0 left-0 right-0 pointer-events-none">
@@ -217,7 +217,7 @@ export default function Services() {
                 }}
             />
 
-            <div className="max-w-[1280px] mx-auto px-[60px]">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[60px]">
                 {/* ── Header ── */}
                 <div className="reveal flex flex-col items-center text-center mb-[64px]" ref={ref}>
                     <div className="flex items-center gap-3 mb-4">
@@ -233,7 +233,7 @@ export default function Services() {
 
                     <h2 className="font-display text-[clamp(32px,4vw,50px)] text-navy leading-[1.1] font-bold mb-5">
                         Clinical{" "}
-                        <em className="not-italic italic" style={{ color: "#0f8c7a" }}>
+                        <em className="italic" style={{ color: "#0f8c7a" }}>
                             Services
                         </em>
                     </h2>
@@ -245,10 +245,7 @@ export default function Services() {
                 </div>
 
                 {/* ── Cards grid ── */}
-                <div
-                    className="grid gap-5"
-                    style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
-                >
+                <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {services.map((svc, i) => (
                         <ServiceCard key={svc.id} service={svc} index={i} />
                     ))}
@@ -256,7 +253,7 @@ export default function Services() {
 
                 {/* ── Bottom CTA strip ── */}
                 <div
-                    className="reveal mt-14 rounded-2xl px-10 py-8 flex items-center justify-between gap-6 flex-wrap"
+                    className="reveal mt-10 sm:mt-12 lg:mt-14 rounded-2xl px-6 sm:px-10 py-7 sm:py-8 flex items-center justify-between gap-6 flex-wrap"
                     style={{
                         background: "linear-gradient(135deg, #07192e 0%, #0a2540 100%)",
                         boxShadow: "0 20px 60px rgba(7,25,46,0.2)",
@@ -267,7 +264,7 @@ export default function Services() {
                             Ready to take the next step?
                         </p>
                         <h3 className="font-display text-[22px] text-white font-bold leading-snug">
-                            Schedule a Consultation with Dr. Mehta
+                            Schedule a Consultation with Dr. Akshath
                         </h3>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
@@ -280,6 +277,8 @@ export default function Services() {
                                 borderRadius: "100px",
                                 boxShadow: "0 6px 20px rgba(15,140,122,0.4)",
                             }}
+                            onClick={() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                            type="button"
                         >
                             Book Appointment
                         </button>

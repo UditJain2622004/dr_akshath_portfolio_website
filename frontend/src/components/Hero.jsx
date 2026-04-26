@@ -92,10 +92,74 @@ export default function Hero() {
 
 
             {/* ── Main layout ── */}
-            <div className="relative z-10 w-full max-w-[1280px] mx-auto px-[60px] pt-[140px] pb-[100px] flex items-center justify-between gap-16">
+            {/* Mobile layout (matches requested phone design) */}
+            <div className="relative z-10 w-full max-w-[680px] mx-auto px-4 pt-16 pb-10 flex flex-col items-center text-center lg:hidden">
+                {/* Image card */}
+                <div className="relative w-full max-w-[300px] sm:max-w-[340px] mx-auto">
+                    {/* Soft backdrop block */}
+                    <div
+                        className="absolute inset-0 rounded-[34px]"
+                        style={{
+                            background: "linear-gradient(135deg, rgba(15,140,122,0.12) 0%, rgba(7,25,46,0.06) 100%)",
+                            transform: "translateY(16px)",
+                            filter: "blur(0px)",
+                        }}
+                    />
+                    <div
+                        className="relative rounded-[34px] overflow-hidden bg-white"
+                        style={{
+                            border: "3px solid rgba(255,255,255,0.9)",
+                            boxShadow: "0 28px 70px rgba(7,25,46,0.18)",
+                        }}
+                    >
+                        <img
+                            src="/dr.akshath.jpeg"
+                            alt="Dr. Akshath Ramesh Acharya"
+                            className="w-full h-[290px] xs:h-[310px] sm:h-[340px] object-cover object-top"
+                        />
+                    </div>
+                </div>
+
+                {/* Text */}
+                <div className="mt-6">
+                    <div className="text-[12px] tracking-[0.18em] uppercase text-navy/55 font-semibold">
+                        Resident Doctor · MBBS
+                    </div>
+                    <div className="mt-3 font-display text-[24px] leading-[1.08] text-navy font-bold">
+                        DR. AKSHATH RAMESH ACHARYA
+                    </div>
+                    <div className="mt-2 text-[11px] text-navy/55">
+                        {["MBBS", "FICCC", "FECHO", "FECMO"].join(" · ")}
+                    </div>
+                    <p className="mt-4 text-[13px] leading-[1.7] text-navy/60 font-light max-w-[520px] mx-auto">
+                        Dedicated clinician passionate about heart health and specialized care. Committed to prevention, diagnosis,
+                        and evidence-based management for better outcomes.
+                    </p>
+
+                    <div className="mt-6 flex flex-col sm:flex-row items-stretch justify-center gap-3">
+                        <button
+                            type="button"
+                            className="bg-teal text-white border-0 px-6 py-2.5 rounded-full text-[13px] font-semibold transition hover:bg-teal-light shadow-teal"
+                            onClick={() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        >
+                            Book Appointment →
+                        </button>
+                        <button
+                            type="button"
+                            className="bg-white text-navy border border-navy/25 px-6 py-2.5 rounded-full text-[13px] font-semibold transition hover:bg-navy/5"
+                            onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        >
+                            Learn More
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop / large layout */}
+            <div className="relative z-10 hidden lg:flex w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[60px] pt-28 sm:pt-32 lg:pt-[140px] pb-14 sm:pb-20 lg:pb-[100px] items-center justify-between gap-12 lg:gap-16">
 
                 {/* ── LEFT: Text content ── */}
-                <div className="max-w-[580px] flex-shrink-0">
+                <div className="max-w-[580px] w-full flex-shrink-0">
                     {/* Tags */}
                     <div className="flex gap-2 flex-wrap mb-7 anim-up-1">
                         {tags.map(({ label, color }) => (
@@ -116,18 +180,18 @@ export default function Hero() {
                     </div>
 
                     <p className="anim-up-2 text-[11px] font-medium text-navy tracking-[0.15em] uppercase mb-4">
-                        Interventional Cardiologist
+                        Resident Doctor · MBBS
                     </p>
 
                     <h1 className="anim-up-3 font-display text-[clamp(44px,5.5vw,72px)] leading-[1.05] text-navy mb-1">
-                        <span className="block">Dr. Arjun</span>
+                        <span className="block">Dr. Akshath</span>
                         <em className="block not-italic" style={{ fontStyle: "italic" }}>
-                            Mehta
+                            Ramesh Acharya
                         </em>
                     </h1>
 
                     <div className="anim-up-4 inline-flex items-center gap-2.5 my-5">
-                        {["MBBS", "MD Cardiology", "FACC"].map((b, i) => (
+                        {["MBBS", "FICCC", "FECHO", "FECMO"].map((b, i) => (
                             <>
                                 {i > 0 && (
                                     <span key={`sep-${i}`} className="text-navy/30 text-lg">·</span>
@@ -143,16 +207,24 @@ export default function Hero() {
                     </div>
 
                     <p className="anim-up-5 text-[15px] font-light text-navy leading-[1.78] max-w-[490px] mb-10">
-                        Delivering <strong className="font-bold text-navy">world-class cardiac care</strong> with 14+ years
-                        of expertise in interventional procedures, heart failure management,
-                        and preventive cardiology across India and the Gulf.
+                        An enthusiastic and high-energy <strong className="font-bold text-navy">MBBS doctor</strong> with 13+
+                        years of experience in medical consultation, counseling, treatment, and clinical practice — with a focus on
+                        cardiac critical care, ECHO, and ECMO.
                     </p>
 
                     <div className="anim-up-6 flex items-center gap-4 flex-wrap">
-                        <button className="bg-teal text-white border-0 px-8 py-3.5 rounded-full font-sans text-[13px] font-semibold cursor-pointer tracking-wide transition-all hover:bg-teal-light hover:-translate-y-0.5 shadow-teal">
+                        <button
+                            className="bg-teal text-white border-0 px-8 py-3.5 rounded-full font-sans text-[13px] font-semibold cursor-pointer tracking-wide transition-all hover:bg-teal-light hover:-translate-y-0.5 shadow-teal"
+                            onClick={() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                            type="button"
+                        >
                             Book Consultation
                         </button>
-                        <button className="bg-transparent text-navy border border-navy/40 px-8 py-3.5 rounded-full font-sans text-[13px] font-medium cursor-pointer transition-all hover:border-navy hover:bg-navy/5 hover:-translate-y-0.5">
+                        <button
+                            className="bg-transparent text-navy border border-navy/40 px-8 py-3.5 rounded-full font-sans text-[13px] font-medium cursor-pointer transition-all hover:border-navy hover:bg-navy/5 hover:-translate-y-0.5"
+                            onClick={() => document.getElementById("publications")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                            type="button"
+                        >
                             View Publications
                         </button>
                         <div className="flex items-center gap-2 text-navy/55 text-[12px] font-medium">
@@ -169,7 +241,7 @@ export default function Hero() {
                 </div>
 
                 {/* ── RIGHT: Doctor image frame ── */}
-                <div className="anim-left relative flex-shrink-0" style={{ width: 420, height: 520 }}>
+                <div className="anim-left relative flex-shrink-0 w-full max-w-[420px] mx-auto lg:mx-0" style={{ height: "clamp(360px, 58vw, 520px)" }}>
 
                     {/* Outer decorative ring */}
                     <div
@@ -196,7 +268,7 @@ export default function Hero() {
 
                     {/* Image card */}
                     <div
-                        className="relative w-full h-full overflow-hidden"
+                        className="relative w-full overflow-hidden"
                         style={{
                             borderRadius: "2rem",
                             border: "3px solid rgba(255,255,255,0.9)",
@@ -207,8 +279,8 @@ export default function Hero() {
                     >
                         {/* Doctor photo */}
                         <img
-                            src="/download.png"
-                            alt="Dr. Arjun Mehta"
+                            src="/dr.akshath.jpeg"
+                            alt="Dr. Akshath Ramesh Acharya"
                             style={{
                                 width: "100%",
                                 height: "100%",
@@ -243,27 +315,31 @@ export default function Hero() {
                                 <CrossIcon />
                             </div>
                             <div>
-                                <div className="text-[11px] font-bold text-navy leading-none">Apollo Hospitals</div>
-                                <div className="text-[9px] text-navy/50 mt-0.5">Senior Consultant</div>
+                                <div className="text-[11px] font-bold text-navy leading-none">KMC Hospital</div>
+                                <div className="text-[9px] text-navy/50 mt-0.5">Resident Doctor</div>
                             </div>
                         </div>
                     </div>
 
                     {/* Floating badge — Experience */}
-                    <Badge
-                        icon={<AwardIcon />}
-                        value="14+"
-                        sub="Years Experience"
-                        style={{ bottom: 80, left: -60 }}
-                    />
+                    <div className="hidden lg:block">
+                        <Badge
+                            icon={<AwardIcon />}
+                            value="13+"
+                            sub="Years Experience"
+                            style={{ bottom: 80, left: -60 }}
+                        />
+                    </div>
 
                     {/* Floating badge — Surgeries */}
-                    <Badge
-                        icon={<HeartRateIcon />}
-                        value="1.4K"
-                        sub="Surgeries Done"
-                        style={{ top: 100, right: -60 }}
-                    />
+                    <div className="hidden lg:block">
+                        <Badge
+                            icon={<HeartRateIcon />}
+                            value="1.4K"
+                            sub="Surgeries Done"
+                            style={{ top: 100, right: -60 }}
+                        />
+                    </div>
 
                     {/* Decorative corner dots */}
                     <div
@@ -318,7 +394,7 @@ export default function Hero() {
             </div>
 
             {/* ── Bottom bar ── */}
-            <div className="anim-bottom absolute bottom-0 left-0 right-0 z-10 px-[60px] pb-10 flex items-end justify-between">
+            <div className="anim-bottom hidden lg:flex absolute bottom-0 left-0 right-0 z-10 px-4 sm:px-6 lg:px-[60px] pb-10 items-end justify-between">
                 <div className="flex gap-2 flex-wrap">
                     {specs.map(({ icon, label }) => (
                         <div

@@ -2,306 +2,307 @@ import { useState } from "react";
 import { useReveal } from "../hooks/useReveal";
 
 const slots = [
-    { time: "9:00 AM", avail: true },
-    { time: "10:00 AM", avail: true },
-    { time: "11:00 AM", avail: false },
-    { time: "12:00 PM", avail: true },
-    { time: "2:00 PM", avail: true },
-    { time: "3:00 PM", avail: false },
-    { time: "4:00 PM", avail: true },
-    { time: "5:00 PM", avail: true },
+    { time: "09:00 AM", avail: true },
+    { time: "10:30 AM", avail: true },
+    { time: "11:00 AM", avail: true },
+    { time: "01:30 PM", avail: true },
+    { time: "02:00 PM", avail: true },
+    { time: "03:30 PM", avail: true },
+    { time: "04:00 PM", avail: false },
+    { time: "05:00 PM", avail: true },
 ];
 
-const visitTypes = [
-    {
-        id: "inperson",
-        label: "In-Person Visit",
-        sub: "Apollo Hospitals, Bengaluru",
-        icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
-            </svg>
-        ),
-    },
-    {
-        id: "video",
-        label: "Video Consultation",
-        sub: "Secure call, any device",
-        icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-            </svg>
-        ),
-    },
+const reasons = [
+    "General Clinical Consultation",
+    "Follow-up Visit",
+    "Second Opinion",
+    "Preventive Health Check",
+    "Other",
 ];
 
-function InfoPill({ icon, label, value }) {
-    return (
-        <div className="flex items-start gap-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: "rgba(27,191,168,0.15)" }}
-            >
-                <span style={{ color: "#1bbfa8" }}>{icon}</span>
-            </div>
-            <div>
-                <div className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>{label}</div>
-                <div className="text-[14px] text-white font-medium leading-snug">{value}</div>
-            </div>
-        </div>
-    );
+function startOfWeek(d) {
+    const date = new Date(d);
+    const day = date.getDay(); // 0 Sun ... 6 Sat
+    const mondayIndex = (day + 6) % 7;
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - mondayIndex);
+    return date;
+}
+
+function addDays(d, n) {
+    const date = new Date(d);
+    date.setDate(date.getDate() + n);
+    return date;
+}
+
+function normalizeDate(d) {
+    const date = new Date(d);
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+
+function fmtShort(d) {
+    return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+function fmtLong(d) {
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 }
 
 export default function Booking() {
-    const [selected, setSelected] = useState(null);
-    const [visitType, setVisitType] = useState("inperson");
     const ref = useReveal();
 
+    const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+    const [selectedDate, setSelectedDate] = useState(() => normalizeDate(new Date()));
+    const [selectedTime, setSelectedTime] = useState("11:00 AM");
+
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [reason, setReason] = useState(reasons[0]);
+    const [notes, setNotes] = useState("");
+
+    const days = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
+    const today = normalizeDate(new Date()).getTime();
+
     return (
-        // <section id="booking" className="relative overflow-hidden" style={{ background: "#f4f9f8" }}>
         <section id="booking" className="relative overflow-hidden bg-white">
-
-            {/* Dot cluster top right */}
-            <div className="absolute top-16 right-16 pointer-events-none opacity-50">
-                <svg width={6 * 13} height={5 * 13} viewBox={`0 0 ${6 * 13} ${5 * 13}`} aria-hidden="true">
-                    {Array.from({ length: 5 }).map((_, r) =>
-                        Array.from({ length: 6 }).map((_, c) => (
-                            <circle key={`${r}-${c}`} cx={c * 13 + 6.5} cy={r * 13 + 6.5} r="1.8" fill="rgba(15,140,122,0.25)" />
-                        ))
-                    )}
-                </svg>
-            </div>
-
-            <div className="max-w-[1280px] mx-auto px-[60px] py-[110px]">
-
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[60px] py-16 sm:py-20 lg:py-[110px]">
                 {/* Section header */}
                 <div className="reveal flex flex-col items-center text-center mb-14" ref={ref}>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-px" style={{ background: "#0f8c7a" }} />
                         <span className="text-[11px] font-semibold tracking-[0.18em] uppercase" style={{ color: "#0f8c7a" }}>
-                            Schedule a visit
+                            Schedule Excellence
                         </span>
                         <div className="w-8 h-px" style={{ background: "#0f8c7a" }} />
                     </div>
                     <h2 className="font-display text-[clamp(30px,4vw,48px)] text-navy leading-[1.1] font-bold mb-4">
-                        Book an{" "}
-                        <em className="not-italic italic" style={{ color: "#0f8c7a" }}>Appointment</em>
+                        Book Your Clinical{" "}
+                        <em className="italic" style={{ color: "#0f8c7a" }}>Consultation</em>
                     </h2>
-                    <p className="text-[15px] font-light text-navy/50 leading-[1.8] max-w-[480px]">
-                        In-person consultations at Apollo Hospitals Bengaluru, or via secure video call
-                        for patients across India and the Gulf.
+                    <p className="text-[15px] font-light text-navy/50 leading-[1.8] max-w-[680px]">
+                        Select a time that suits your schedule. Each consultation is intentionally curated to provide focused clinical attention.
                     </p>
                 </div>
 
-                {/* Main card */}
-                <div
-                    className="reveal grid overflow-hidden"
-                    style={{
-                        gridTemplateColumns: "1fr 1.5fr",
-                        borderRadius: "24px",
-                        boxShadow: "0 0px 30px rgba(7,25,46,0.3)",
-                        border: "1px solid rgba(7,25,46,0.08)",
-                    }}
-                >
-                    {/* ── LEFT: dark info panel ── */}
-                    <div
-                        className="flex flex-col p-10 relative overflow-hidden"
-                        style={{ background: "linear-gradient(160deg, #07192e 0%, #0a2d45 100%)" }}
-                    >
-                        {/* Glow */}
-                        <div
-                            className="absolute pointer-events-none rounded-full"
-                            style={{
-                                width: 300,
-                                height: 300,
-                                background: "radial-gradient(circle, rgba(15,140,122,0.18) 0%, transparent 70%)",
-                                bottom: -80,
-                                right: -80,
-                            }}
-                        />
-
-                        {/* Availability badge */}
-                        <div
-                            className="inline-flex items-center gap-2 self-start rounded-full px-3.5 py-2 mb-8"
-                            style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)" }}
-                        >
-                            <span className="w-2 h-2 rounded-full anim-pulse" style={{ background: "#4ade80", boxShadow: "0 0 8px rgba(74,222,128,0.7)" }} />
-                            <span className="text-[11px] font-semibold text-white/80 tracking-wide">Accepting new patients</span>
-                        </div>
-
-                        <h3 className="font-display text-[24px] text-white leading-snug font-bold mb-1">
-                            Clinic &amp; Contact
-                        </h3>
-                        <p className="text-[13px] font-light mb-6" style={{ color: "rgba(255,255,255,0.45)" }}>
-                            Same-week appointments usually available
-                        </p>
-
-                        {/* Google Map */}
-                        <div
-                            className="rounded-xl overflow-hidden mb-4 flex-shrink-0"
-                            style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-                        >
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15555.700147988358!2d77.58784650570078!3d12.893116527552254!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae153e390c2a8f%3A0x6b4fb71dd6cf0e3b!2sApollo%20Hospitals%20Bannerghatta%20Road%20Bengaluru!5e0!3m2!1sen!2sus!4v1713180231500!5m2!1sen!2sus"
-                                width="100%"
-                                height="180"
-                                style={{ border: 0, display: "block", filter: "grayscale(30%) contrast(1.05)" }}
-                                allowFullScreen=""
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                                title="Apollo Hospitals Location"
-                            />
-                        </div>
-
-                        <div className="flex flex-col">
-                            <InfoPill
-                                icon={
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
-                                    </svg>
-                                }
-                                label="Location"
-                                value={<>Apollo Hospitals, Bannerghatta Rd<br /><span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Bengaluru, Karnataka 560076</span></>}
-                            />
-                            <InfoPill
-                                icon={
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                                    </svg>
-                                }
-                                label="Consultation Hours"
-                                value={<>Mon – Sat · 9:00 AM – 5:00 PM<br /><span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Emergency calls: 24 × 7</span></>}
-                            />
-                            <InfoPill
-                                icon={
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                                    </svg>
-                                }
-                                label="Video Consultation"
-                                value={<>Available for Gulf &amp; international patients<br /><span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Secure, HD video · Any device</span></>}
-                            />
-                            <InfoPill
-                                icon={
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.19 2 2 0 012 .01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
-                                    </svg>
-                                }
-                                label="Phone / WhatsApp"
-                                value="+91 98765 43210"
-                            />
-                        </div>
-
-                        {/* Trust row */}
-                        <div className="mt-auto pt-8 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(27,191,168,0.15)" }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1bbfa8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                </svg>
+                {/* Main booking UI */}
+                <div className="reveal grid gap-6 items-start grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+                    {/* ── LEFT: Date + Time ── */}
+                    <div className="flex flex-col gap-5 self-start lg:sticky lg:top-24">
+                        {/* Select date */}
+                        <div className="bg-white rounded-2xl border border-navy/10 shadow-[0_18px_55px_rgba(7,25,46,0.08)] p-7">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-baseline gap-3">
+                                    <span className="text-[15px] font-semibold text-navy">1. Select Date</span>
+                                    <span className="text-[11px] text-navy/40">
+                                        {weekStart.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        className="w-9 h-9 rounded-lg border border-navy/10 bg-white hover:bg-navy/5 transition"
+                                        onClick={() => setWeekStart(addDays(weekStart, -7))}
+                                        aria-label="Previous week"
+                                    >
+                                        ‹
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="w-9 h-9 rounded-lg border border-navy/10 bg-white hover:bg-navy/5 transition"
+                                        onClick={() => setWeekStart(addDays(weekStart, 7))}
+                                        aria-label="Next week"
+                                    >
+                                        ›
+                                    </button>
+                                </div>
                             </div>
-                            <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-                                All data is encrypted and never shared
-                            </span>
-                        </div>
-                    </div>
 
-                    {/* ── RIGHT: form ── */}
-                    <div className="bg-white p-10 flex flex-col gap-6">
-                        <div>
-                            <h3 className="font-display text-[22px] text-navy font-bold mb-1">Request a Consultation</h3>
-                            <p className="text-[13px] font-light" style={{ color: "#6b8aa0" }}>
-                                We'll confirm your slot within 2 hours.
-                            </p>
-                        </div>
-
-                        {/* Visit type toggle */}
-                        <div className="flex gap-3">
-                            {visitTypes.map(({ id, label, sub, icon }) => (
-                                <button
-                                    key={id}
-                                    onClick={() => setVisitType(id)}
-                                    className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3.5 text-left transition-all cursor-pointer"
-                                    style={{
-                                        border: visitType === id ? "1.5px solid #0f8c7a" : "1.5px solid rgba(7,25,46,0.1)",
-                                        background: visitType === id ? "rgba(15,140,122,0.05)" : "transparent",
-                                    }}
-                                >
-                                    <span style={{ color: visitType === id ? "#0f8c7a" : "#9ab0bf" }}>{icon}</span>
-                                    <div>
-                                        <div className="text-[12.5px] font-semibold" style={{ color: visitType === id ? "#0e2237" : "#6b8aa0" }}>{label}</div>
-                                        <div className="text-[11px]" style={{ color: "#9ab0bf" }}>{sub}</div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Name row */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: "#3a5068" }}>First Name</label>
-                                <input className="form-input" type="text" placeholder="Rahul" />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: "#3a5068" }}>Last Name</label>
-                                <input className="form-input" type="text" placeholder="Sharma" />
+                            <div className="overflow-x-auto -mx-2 px-2">
+                                <div className="grid grid-cols-7 gap-2 min-w-[520px] sm:min-w-0">
+                                    {days.map((d) => {
+                                    const ts = normalizeDate(d).getTime();
+                                    const isSelected = ts === selectedDate.getTime();
+                                    const isToday = ts === today;
+                                    return (
+                                        <button
+                                            key={d.toISOString()}
+                                            type="button"
+                                            onClick={() => setSelectedDate(normalizeDate(d))}
+                                            className="rounded-xl px-2 py-3 text-center transition border"
+                                            style={{
+                                                borderColor: isSelected ? "rgba(15,140,122,0.35)" : "rgba(7,25,46,0.08)",
+                                                background: isSelected ? "rgba(15,140,122,0.08)" : "#fff",
+                                            }}
+                                        >
+                                            <div className="text-[10px] tracking-[0.12em] uppercase" style={{ color: "rgba(7,25,46,0.45)" }}>
+                                                {d.toLocaleDateString(undefined, { weekday: "short" })}
+                                            </div>
+                                            <div className="text-[14px] font-semibold text-navy mt-1">{d.getDate()}</div>
+                                            {isToday && !isSelected && (
+                                                <div className="text-[10px] mt-1" style={{ color: "#0f8c7a" }}>Today</div>
+                                            )}
+                                        </button>
+                                    );
+                                    })}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Contact row */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: "#3a5068" }}>Email Address</label>
-                                <input className="form-input" type="email" placeholder="rahul@example.com" />
+                        {/* Select time */}
+                        <div className="bg-white rounded-2xl border border-navy/10 shadow-[0_18px_55px_rgba(7,25,46,0.08)] p-7">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[15px] font-semibold text-navy">2. Select Time</span>
+                                <span className="text-[11px] text-navy/40">{fmtShort(selectedDate)}</span>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: "#3a5068" }}>Phone / WhatsApp</label>
-                                <input className="form-input" type="tel" placeholder="+91 98765 43210" />
-                            </div>
-                        </div>
 
-                        {/* Concern */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-[11.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: "#3a5068" }}>Primary Concern <span style={{ color: "#9ab0bf", textTransform: "none", fontWeight: 400 }}>(optional)</span></label>
-                            <input className="form-input" type="text" placeholder="e.g. chest pain, follow-up, second opinion…" />
-                        </div>
-
-                        {/* Time slot */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[11.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: "#3a5068" }}>Preferred Time Slot</label>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {slots.map(({ time, avail }) => (
-                                    <div
+                                    <button
                                         key={time}
-                                        className={`time-slot ${!avail ? "disabled" : ""} ${selected === time ? "selected" : ""}`}
-                                        onClick={() => avail && setSelected(time)}
+                                        type="button"
+                                        disabled={!avail}
+                                        className={`time-slot ${!avail ? "disabled" : ""} ${selectedTime === time ? "selected" : ""}`}
+                                        onClick={() => avail && setSelectedTime(time)}
                                     >
                                         {time}
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Submit */}
-                        <button
-                            className="w-full font-sans text-[14px] font-semibold text-white cursor-pointer transition-all hover:-translate-y-0.5 mt-1"
-                            style={{
-                                background: "linear-gradient(135deg, #0f8c7a 0%, #1bbfa8 100%)",
-                                border: "none",
-                                padding: "15px 24px",
-                                borderRadius: "12px",
-                                boxShadow: "0 8px 24px rgba(15,140,122,0.35)",
-                                letterSpacing: "0.02em",
-                            }}
-                        >
-                            Confirm Appointment Request →
-                        </button>
+                        {/* Help card (fills empty space) */}
+                        <div className="bg-white rounded-2xl border border-navy/10 shadow-[0_18px_55px_rgba(7,25,46,0.08)] p-7">
+                            <div className="flex items-start justify-between gap-6">
+                                <div>
+                                    <div className="text-[12px] font-semibold tracking-[0.12em] uppercase" style={{ color: "#0f8c7a" }}>
+                                        Need help booking?
+                                    </div>
+                                    <div className="text-[15px] font-semibold text-navy mt-2">
+                                        Call / WhatsApp
+                                    </div>
+                                    <div className="text-[13px] text-navy/60 mt-1">
+                                        +91 95381 07758
+                                    </div>
+                                    <div className="text-[12px] text-navy/45 mt-3 leading-[1.7] max-w-[360px]">
+                                        If you’re unsure about the right slot or visit reason, message us and we’ll help confirm the best option.
+                                    </div>
+                                </div>
 
-                        <p className="flex items-center justify-center gap-1.5 text-[11px]" style={{ color: "#9ab0bf" }}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            </svg>
-                            Your data is secure and confidential. We never share it.
-                        </p>
+                                <div
+                                    className="hidden sm:flex flex-shrink-0 items-center justify-center rounded-2xl"
+                                    style={{
+                                        width: 86,
+                                        height: 86,
+                                        background: "linear-gradient(135deg, rgba(15,140,122,0.12) 0%, rgba(7,25,46,0.06) 100%)",
+                                        border: "1px solid rgba(7,25,46,0.08)",
+                                    }}
+                                >
+                                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0f8c7a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.19 2 2 0 012 .01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── RIGHT: Patient details ── */}
+                    <div className="bg-white rounded-2xl border border-navy/10 shadow-[0_18px_55px_rgba(7,25,46,0.08)] p-7">
+                        <div className="flex items-start justify-between gap-4 mb-6">
+                            <div>
+                                <div className="text-[15px] font-semibold text-navy">3. Patient Details</div>
+                                <div className="text-[12px] text-navy/45 mt-1">Dr. Akshath Ramesh Acharya · MBBS</div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6 flex items-center gap-4 rounded-xl border border-navy/10 bg-[#f7faf9] p-4">
+                            <img
+                                src="/dr.akshath.jpeg"
+                                alt="Dr. Akshath Ramesh Acharya"
+                                className="w-[68px] h-[68px] rounded-xl object-cover border border-navy/10"
+                            />
+                            <div>
+                                <div className="text-[12px] font-semibold text-navy leading-snug">Consultation with Dr. Akshath</div>
+                                <div className="text-[11px] text-navy/45 mt-1">Kindly share accurate details to confirm your slot.</div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Full Name</label>
+                                <input className="form-input" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" />
+                            </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Contact Email</label>
+                                    <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Phone Number</label>
+                                    <input className="form-input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 XXXXX XXXXX" />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Reason for Visit</label>
+                                <select className="form-input" value={reason} onChange={(e) => setReason(e.target.value)}>
+                                    {reasons.map((r) => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Additional Context</label>
+                                <textarea
+                                    className="form-input"
+                                    rows={3}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Briefly describe your symptoms or specific concerns..."
+                                />
+                            </div>
+
+                            {/* Summary */}
+                            <div className="rounded-xl border border-navy/10 bg-[#f7faf9] p-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <div className="text-[10px] tracking-[0.12em] uppercase text-navy/45">Appointment Date</div>
+                                        <div className="text-[13px] font-semibold text-navy mt-1">{fmtLong(selectedDate)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] tracking-[0.12em] uppercase text-navy/45">Consultation Time</div>
+                                        <div className="text-[13px] font-semibold text-navy mt-1">{selectedTime}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="w-full rounded-xl py-3.5 text-[13px] font-semibold text-white transition-all hover:-translate-y-0.5"
+                                style={{
+                                    background: "linear-gradient(135deg, #0b3b52 0%, #07192e 100%)",
+                                    boxShadow: "0 10px 26px rgba(7,25,46,0.22)",
+                                }}
+                                onClick={() => {
+                                    // UI demo only; backend can be wired later.
+                                    // Keeping this intentionally side-effect light.
+                                    void fullName;
+                                    void email;
+                                    void phone;
+                                    void reason;
+                                    void notes;
+                                }}
+                            >
+                                Confirm Appointment
+                            </button>
+
+                            <p className="text-center text-[11px] text-navy/40 leading-[1.6]">
+                                By confirming, you agree to our clinic terms. A confirmation message will be sent shortly.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

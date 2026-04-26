@@ -1,16 +1,16 @@
 import { useReveal } from "../hooks/useReveal";
 
 const specializations = [
-    { icon: "❤️", label: "Coronary Angioplasty" },
-    { icon: "🫀", label: "Structural Heart" },
-    { icon: "🩺", label: "Heart Failure" },
+    { icon: "🫀", label: "Cardiac Critical Care" },
+    { icon: "📈", label: "Echocardiography (ECHO)" },
+    { icon: "🫁", label: "ECMO Support" },
     // { icon: "📋", label: "Clinical Research" },
 ];
 
 const credentials = [
-    { year: "2010", title: "MD Cardiology", place: "AIIMS, New Delhi" },
-    { year: "2013", title: "Fellowship – Interventional Cardiology", place: "Cleveland Clinic, USA" },
-    { year: "2015", title: "Senior Consultant", place: "Apollo Hospitals, India" },
+    { year: "2011", title: "MBBS", place: "A.J. Institute of Medical Sciences, Mangalore" },
+    { year: "2012–2025", title: "Resident Doctor", place: "KMC Hospital, Mangalore" },
+    { year: "2014–Present", title: "Medical Officer (Evening)", place: "Health Care Center, NITK Karnataka" },
 ];
 
 /* Light ECG wave illustration */
@@ -73,7 +73,7 @@ export default function About() {
     const ref = useReveal();
 
     return (
-        <section id="about" className="relative bg-white py-[110px] overflow-hidden">
+        <section id="about" className="relative bg-white py-16 sm:py-20 lg:py-[110px] overflow-hidden">
 
             {/* ── Background decorations ── */}
             {/* ECG wave top */}
@@ -109,10 +109,10 @@ export default function About() {
             />
 
             {/* ── Main grid ── */}
-            <div className="max-w-[1280px] mx-auto px-[60px] grid grid-cols-[1fr_1.2fr] gap-[80px] items-center">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[60px] grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-10 lg:gap-[80px] items-center">
 
                 {/* ── LEFT: Stacked Image Frame ── */}
-                <div className="relative reveal" ref={ref} style={{ paddingBottom: 32, paddingRight: 24 }}>
+                <div className="hidden lg:block relative reveal mx-auto lg:mx-0 w-full max-w-[520px]" ref={ref} style={{ paddingBottom: 24, paddingRight: 16 }}>
 
                     {/* Back block — offset salmon/teal */}
                     {/* <div
@@ -157,8 +157,8 @@ export default function About() {
                         }}
                     >
                         <img
-                            src="/download2.png"
-                            alt="Dr. Arjun Mehta with patient"
+                            src="/dr.akshath.jpeg"
+                            alt="Dr. Akshath Ramesh Acharya"
                             className="w-full h-full object-cover"
                             onError={(e) => { e.target.style.display = "none"; }}
                         />
@@ -220,14 +220,14 @@ export default function About() {
                     <div className="reveal reveal-d1 flex items-center gap-3 mb-4">
                         <div className="w-8 h-px" style={{ background: "#0f8c7a" }} />
                         <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-teal">
-                            About Dr. Mehta
+                            About Dr. Akshath
                         </p>
                     </div>
 
                     {/* Heading */}
                     <h2 className="reveal reveal-d1 font-display text-[clamp(30px,3.5vw,46px)] text-navy leading-[1.1] font-bold mb-5">
                         Healing Hearts with{" "}
-                        <em className="not-italic italic" style={{ color: "#0f8c7a" }}>
+                        <em className="italic" style={{ color: "#0f8c7a" }}>
                             Precision
                         </em>{" "}
                         &amp; Compassion
@@ -235,10 +235,10 @@ export default function About() {
 
                     {/* Bio */}
                     <p className="reveal reveal-d2 text-[15px] font-light text-[#4a6275] leading-[1.85] mb-7" style={{ maxWidth: 500 }}>
-                        Interventional Cardiologist with over <strong className="font-semibold text-navy">14 years</strong> of experience
-                        in advanced cardiac procedures, heart failure management, and preventive
-                        cardiology. Trained at world-class institutions across India and the United States,
-                        Dr. Mehta brings global expertise to every patient encounter.
+                        A certified <strong className="font-semibold text-navy">MBBS doctor</strong> with over{" "}
+                        <strong className="font-semibold text-navy">13 years</strong> of experience in medical consultation,
+                        counseling, and treatment. Experienced in cardiac critical care with training in ECHO and ECMO, with strong
+                        exposure across emergency and inpatient care.
                     </p>
 
                     {/* Specialization chips */}
@@ -317,19 +317,10 @@ export default function About() {
                                 borderRadius: "100px",
                                 boxShadow: "0 8px 24px rgba(15,140,122,0.3)",
                             }}
+                            onClick={() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                            type="button"
                         >
                             Book an Appointment
-                        </button>
-                        <button
-                            className="font-sans text-[13.5px] font-medium text-navy cursor-pointer transition-all hover:border-navy hover:bg-navy/5 hover:-translate-y-0.5"
-                            style={{
-                                background: "transparent",
-                                border: "1.5px solid rgba(7,25,46,0.25)",
-                                padding: "13px 28px",
-                                borderRadius: "100px",
-                            }}
-                        >
-                            Download CV
                         </button>
                     </div>
                 </div>
