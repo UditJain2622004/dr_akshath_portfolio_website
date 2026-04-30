@@ -1,12 +1,13 @@
 import { db } from '../../_utils/firebaseAdmin.js';
 import { verifyAuth, requireAdmin } from '../../_utils/authMiddleware.js';
 import { sendError, sendSuccess, validateRequired, isValidDate, isValidTime } from '../../_utils/apiHelpers.js';
-import { generateSlotTimes, buildSlotId, classifyBookingDate } from '../../_utils/slotGenerator.js';
+import { generateSlotTimes, buildSlotId, classifyBookingDate, parseTime } from '../../_utils/slotGenerator.js';
 import { normalizePhone } from '../../_utils/phoneUtils.js';
 import { checkDoctorLeave } from '../../_utils/leaveChecker.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
+const TRAVEL_BUFFER_MINUTES = 30;
 
 export default async function handler(req, res) {
   if (req.method === 'GET' && req.query.checkFollowup === 'true') {
@@ -179,12 +180,20 @@ async function handlePost(req, res) {
     const slotRef = db.collection('doctorSlots').doc(buildSlotId(clinicId, date, time));
 
     await db.runTransaction(async (transaction) => {
-      const conflictQuery = db.collection('appointments')
+      // Fetch ALL active appointments for this date to check cross-clinic buffer
+      const allApptQuery = db.collection('appointments')
         .where('appointmentDate', '==', date)
-        .where('timeSlot', '==', time)
         .where('status', 'in', ACTIVE_STATUSES);
-      const conflictSnapshot = await transaction.get(conflictQuery);
-      if (!conflictSnapshot.empty) throw new Error('TIME_CONFLICT');
+      const allApptSnapshot = await transaction.get(allApptQuery);
+
+      const slotMinutes = parseTime(time);
+      for (const doc of allApptSnapshot.docs) {
+        const appt = doc.data();
+        const apptMinutes = parseTime(appt.timeSlot);
+        const diff = Math.abs(slotMinutes - apptMinutes);
+        if (diff === 0) throw new Error('TIME_CONFLICT');
+        if (diff < TRAVEL_BUFFER_MINUTES && appt.clinicId !== clinicId) throw new Error('TRAVEL_BUFFER_CONFLICT');
+      }
 
       transaction.set(appointmentRef, {
         patientId: patientPhone,
@@ -231,7 +240,10 @@ async function handlePost(req, res) {
     });
   } catch (error) {
     if (error.message === 'TIME_CONFLICT') {
-      return sendError(res, 409, 'Doctor is already booked at this time in another clinic.');
+      return sendError(res, 409, 'Doctor is already booked at this time.');
+    }
+    if (error.message === 'TRAVEL_BUFFER_CONFLICT') {
+      return sendError(res, 409, 'Too close to an appointment at another clinic. A 30-minute travel gap is required.');
     }
     if (error.message === 'SLOT_ALREADY_BOOKED') {
       return sendError(res, 409, 'Slot already booked.');

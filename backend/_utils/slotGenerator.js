@@ -1,6 +1,6 @@
 // Slot generation logic for a single doctor operating across multiple clinics.
 
-function parseTime(timeStr) {
+export function parseTime(timeStr) {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
 }
