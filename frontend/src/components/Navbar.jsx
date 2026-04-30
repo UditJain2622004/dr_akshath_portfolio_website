@@ -14,56 +14,101 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="anim-nav absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-[60px] py-5 sm:py-6 lg:py-7">
+        <nav className="anim-nav absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-[80px] py-5 sm:py-6 lg:py-6">
             {/* Logo */}
             <button type="button" onClick={() => scrollTo("")} className="flex items-center gap-3 no-underline text-left">
-                <div className="w-10 h-10 rounded-lg bg-white/10 border border-navy/20 flex items-center justify-center font-display text-[19px] text-navy backdrop-blur-sm">
+                <div className="w-12 h-12 rounded-xl bg-white/10 border border-navy/20 flex items-center justify-center font-display text-[22px] text-navy backdrop-blur-sm">
                     A
                 </div>
                 <div className="flex flex-col">
-                    <strong className="text-[14px] font-semibold text-navy tracking-tight">Dr. Akshath Ramesh Acharya</strong>
-                    <span className="text-[10px] text-navy/50 tracking-[0.12em] uppercase">MBBS · Cardiac Critical Care</span>
+                    <strong className="text-[15.5px] font-semibold text-navy tracking-tight">Dr. Akshath Ramesh Acharya</strong>
+                    <span className="text-[11px] text-navy/50 tracking-[0.12em] uppercase">MBBS · Cardiac Critical Care</span>
                 </div>
             </button>
 
-            {/* Links */}
-            <div className="hidden md:flex items-center gap-2 bg-white/10 border border-navy/20 rounded-full px-2 py-1.5 backdrop-blur-md">
+            {/* Centered glassy nav pill — desktop */}
+            <div
+                className="hidden md:flex items-center gap-1.5 rounded-full px-2 py-1.5 absolute left-1/2 -translate-x-1/2"
+                style={{
+                    background: "rgba(255,255,255,0.45)",
+                    backdropFilter: "blur(16px) saturate(180%)",
+                    WebkitBackdropFilter: "blur(16px) saturate(180%)",
+                    border: "1px solid rgba(255,255,255,0.55)",
+                    boxShadow: "0 4px 24px rgba(7,25,46,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
+                }}
+            >
                 {["Home", "About", "Services"].map((l, i) => (
                     <a key={l} href={`#${l === "Home" ? "" : l.toLowerCase()}`}
-                        className={`text-[13px] px-[17px] py-[7px] rounded-full transition-all no-underline font-medium ${i === 0
-                            ? "bg-white text-navy font-medium"
-                            : "text-navy/75 hover:text-navy hover:bg-white/20"
+                        className={`text-[14px] px-[19px] py-[8px] rounded-full transition-all no-underline font-medium ${i === 0
+                            ? "bg-white/80 text-navy font-semibold shadow-sm"
+                            : "text-navy/70 hover:text-navy hover:bg-white/30"
                             }`}>
                         {l}
                     </a>
                 ))}
                 <a href="#booking"
-                    className="text-[13px] px-[17px] py-[7px] rounded-full bg-teal text-white font-medium transition-all hover:bg-teal-light no-underline">
+                    className="text-[14px] px-[19px] py-[8px] rounded-full bg-teal text-white font-medium transition-all hover:bg-teal-light no-underline shadow-sm">
                     ● Book Now
                 </a>
-                <a href="#contact" className="text-[13px] px-[17px] py-[7px] rounded-full text-navy/75 hover:text-navy hover:bg-white/20 transition-all no-underline">
+                <a href="#contact" className="text-[14px] px-[19px] py-[8px] rounded-full text-navy/70 hover:text-navy hover:bg-white/30 transition-all no-underline font-medium">
                     Contact
                 </a>
             </div>
 
-            {/* Mobile menu button */}
+            {/* Hamburger button — mobile */}
             <button
                 type="button"
-                className="md:hidden bg-white/40 border border-navy/15 backdrop-blur-md text-navy rounded-full px-4 py-2.5 text-[13px] font-semibold transition hover:bg-white/60"
+                className="md:hidden w-11 h-11 rounded-xl flex items-center justify-center transition hover:bg-white/50"
+                style={{
+                    background: "rgba(255,255,255,0.45)",
+                    backdropFilter: "blur(24px)",
+                    WebkitBackdropFilter: "blur(24px)",
+                    border: "1px solid rgba(255,255,255,0.5)",
+                    boxShadow: "0 2px 12px rgba(7,25,46,0.08)",
+                }}
                 onClick={() => setOpen((v) => !v)}
                 aria-expanded={open}
                 aria-controls="mobile-nav"
+                aria-label={open ? "Close menu" : "Open menu"}
             >
-                Menu
+                <div className="relative w-[18px] h-[14px]">
+                    <span
+                        className="absolute left-0 w-full h-[2px] rounded-full bg-navy transition-all duration-300"
+                        style={{
+                            top: open ? "6px" : "0px",
+                            transform: open ? "rotate(45deg)" : "rotate(0deg)",
+                        }}
+                    />
+                    <span
+                        className="absolute left-0 top-[6px] w-full h-[2px] rounded-full bg-navy transition-all duration-300"
+                        style={{
+                            opacity: open ? 0 : 1,
+                        }}
+                    />
+                    <span
+                        className="absolute left-0 w-full h-[2px] rounded-full bg-navy transition-all duration-300"
+                        style={{
+                            top: open ? "6px" : "12px",
+                            transform: open ? "rotate(-45deg)" : "rotate(0deg)",
+                        }}
+                    />
+                </div>
             </button>
 
             {/* Mobile menu */}
             {open && (
                 <div
                     id="mobile-nav"
-                    className="md:hidden absolute top-[74px] left-4 right-4 sm:left-6 sm:right-6 rounded-2xl bg-white/90 backdrop-blur-xl border border-navy/10 shadow-[0_18px_55px_rgba(7,25,46,0.14)] p-3"
+                    className="md:hidden absolute top-[74px] left-4 right-4 sm:left-6 sm:right-6 rounded-2xl p-3"
                     role="dialog"
                     aria-label="Navigation"
+                    style={{
+                        background: "rgba(255,255,255,0.75)",
+                        backdropFilter: "blur(20px) saturate(180%)",
+                        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                        border: "1px solid rgba(255,255,255,0.5)",
+                        boxShadow: "0 18px 55px rgba(7,25,46,0.14), inset 0 1px 0 rgba(255,255,255,0.6)",
+                    }}
                 >
                     {[
                         { label: "Home", id: "" },
@@ -76,7 +121,7 @@ export default function Navbar() {
                         <button
                             key={item.label}
                             type="button"
-                            className="w-full text-left px-4 py-3 rounded-xl text-[14px] font-semibold text-navy/80 hover:bg-navy/5 transition"
+                            className="w-full text-left px-4 py-3 rounded-xl text-[14px] font-semibold text-navy/80 hover:bg-white/50 transition"
                             onClick={() => scrollTo(item.id)}
                         >
                             {item.label}

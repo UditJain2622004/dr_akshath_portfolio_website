@@ -7,19 +7,12 @@ import SchedulePage from './admin/schedule';
 import PendingPage from './admin/pending';
 import HistoryPage from './admin/history';
 import ProfilePage from './admin/profile';
+import CreateBookingPage from './admin/createBooking';
+import ManageSlotsPage from './admin/manageSlots';
+import AddLeavePage from './admin/addLeave';
 import { T, I } from '../components/admin/theme';
 import { useAuth } from '../context/AuthContext';
 import { getBookings } from '../services/adminApi';
-
-const Placeholder = ({ title, icon }) => (
-  <div className="flex-1 flex flex-col items-center justify-center gap-4 py-20" style={{ background: 'white' }}>
-    <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: T.hero }}>
-      <span style={{ color: T.teal }}><I n={icon} s={28} /></span>
-    </div>
-    <p className="text-lg font-bold" style={{ color: T.navy, fontFamily: 'DM Serif Display, serif' }}>{title}</p>
-    <p className="text-xs" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>Coming soon</p>
-  </div>
-);
 
 const SidebarItem = ({ id, icon, label, badge, active, onClick }) => (
   <button onClick={() => onClick(id)}
@@ -150,9 +143,9 @@ export default function Admin() {
               <Route path="pending" element={<PendingPage />} />
               <Route path="history" element={<HistoryPage />} />
               <Route path="profile" element={<ProfilePage setPage={handleNavigate} />} />
-              <Route path="create" element={<Placeholder title="Create Booking" icon="plus" />} />
-              <Route path="manage" element={<Placeholder title="Manage Slots" icon="sliders" />} />
-              <Route path="delay" element={<Placeholder title="Add Leave" icon="delay" />} />
+              <Route path="create" element={<CreateBookingPage setPage={handleNavigate} />} />
+              <Route path="manage" element={<ManageSlotsPage setPage={handleNavigate} />} />
+              <Route path="delay" element={<AddLeavePage setPage={handleNavigate} />} />
               <Route path="*" element={<Navigate to="home" replace />} />
             </Routes>
           </div>

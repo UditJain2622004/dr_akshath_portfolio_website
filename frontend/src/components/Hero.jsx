@@ -93,38 +93,156 @@ export default function Hero() {
 
             {/* ── Main layout ── */}
             {/* Mobile layout (matches requested phone design) */}
-            <div className="relative z-10 w-full max-w-[680px] mx-auto px-4 pt-16 pb-10 flex flex-col items-center text-center lg:hidden">
-                {/* Image card */}
-                <div className="relative w-full max-w-[300px] sm:max-w-[340px] mx-auto">
-                    {/* Soft backdrop block */}
+            <div className="relative z-10 w-full max-w-[680px] mx-auto px-4 pt-24 pb-10 flex flex-col items-center text-center lg:hidden">
+                {/* Image card area with decorative elements */}
+                <div className="relative w-full max-w-[300px] sm:max-w-[340px] mx-auto mb-10">
+                    {/* Decorative rings (mobile version) */}
+                    {/* <div
+                        className="absolute rounded-[2.5rem]"
+                        style={{
+                            inset: -12,
+                            border: "1.5px dashed rgba(15,140,122,0.25)",
+                            animation: "slowSpin 30s linear infinite",
+                            zIndex: 0,
+                        }}
+                    /> */}
                     <div
+                        className="absolute rounded-[2.2rem]"
+                        style={{
+                            inset: -6,
+                            border: "1.5px solid rgba(15,140,122,0.14)",
+                            zIndex: 0,
+                        }}
+                    />
+
+                    {/* Soft backdrop block */}
+                    {/* <div
                         className="absolute inset-0 rounded-[34px]"
                         style={{
                             background: "linear-gradient(135deg, rgba(15,140,122,0.12) 0%, rgba(7,25,46,0.06) 100%)",
                             transform: "translateY(16px)",
-                            filter: "blur(0px)",
                         }}
-                    />
+                    /> */}
+
+                    {/* Main image container */}
                     <div
                         className="relative rounded-[34px] overflow-hidden bg-white"
                         style={{
                             border: "3px solid rgba(255,255,255,0.9)",
                             boxShadow: "0 28px 70px rgba(7,25,46,0.18)",
+                            zIndex: 1,
                         }}
                     >
                         <img
                             src="/dr.akshath.jpeg"
                             alt="Dr. Akshath Ramesh Acharya"
-                            className="w-full h-[290px] xs:h-[310px] sm:h-[340px] object-cover object-top"
+                            className="w-full h-[270px] xs:h-[310px] sm:h-[340px] object-cover object-top"
                         />
+
+                        {/* Hospital badge (mobile) */}
+                        {/* <div
+                            className="absolute top-3 left-3 flex items-center gap-1.5 rounded-lg px-2 py-1.5 backdrop-blur-md"
+                            style={{
+                                background: "rgba(255,255,255,0.88)",
+                                border: "1px solid rgba(15,140,122,0.15)",
+                                boxShadow: "0 4px 12px rgba(7,25,46,0.08)",
+                            }}
+                        >
+                            <div
+                                className="w-5 h-5 rounded flex items-center justify-center"
+                                style={{ background: "rgba(15,140,122,0.12)" }}
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f8c7a" strokeWidth="2.5" strokeLinecap="round">
+                                    <path d="M12 2v20M2 12h20" />
+                                </svg>
+                            </div>
+                            <div className="text-[10px] font-bold text-navy leading-none">KMC Hospital</div>
+                        </div> */}
                     </div>
+
+                    {/* Floating badges (mobile) */}
+                    {/* <div className="z-10">
+                        <Badge
+                            icon={<AwardIcon />}
+                            value="13+"
+                            sub="Years"
+                            style={{ bottom: -10, left: -25, scale: "0.85", transformOrigin: "bottom left" }}
+                        />
+                        <Badge
+                            icon={<HeartRateIcon />}
+                            value="1.4K"
+                            sub="Surgeries"
+                            style={{ top: 20, right: -30, scale: "0.85", transformOrigin: "top right" }}
+                        />
+                    </div> */}
+
+                    {/* Decorative corner dots (mobile) */}
+                    <div
+                        className="absolute -bottom-6 -right-4 w-16 h-16 opacity-40"
+                        style={{
+                            backgroundImage: "radial-gradient(circle, rgba(15,140,122,0.35) 1.5px, transparent 1.5px)",
+                            backgroundSize: "10px 10px",
+                        }}
+                    />
+                    <div
+                        className="absolute -top-6 -left-4 w-12 h-12 opacity-30"
+                        style={{
+                            backgroundImage: "radial-gradient(circle, rgba(15,140,122,0.25) 1.5px, transparent 1.5px)",
+                            backgroundSize: "10px 10px",
+                        }}
+                    />
+
+                    {/* Accent circles (mobile) */}
+                    <div
+                        className="absolute rounded-full anim-pulse"
+                        style={{
+                            width: 10,
+                            height: 10,
+                            background: "#0f8c7a",
+                            boxShadow: "0 0 0 3px rgba(15,140,122,0.2)",
+                            bottom: 40,
+                            left: -20,
+                            zIndex: 5,
+                        }}
+                    />
+                    <div
+                        className="absolute rounded-full"
+                        style={{
+                            width: 8,
+                            height: 8,
+                            background: "#d89f16",
+                            boxShadow: "0 0 0 2px rgba(216,159,22,0.2)",
+                            top: 60,
+                            right: -15,
+                            zIndex: 5,
+                        }}
+                    />
                 </div>
 
-                {/* Text */}
-                <div className="mt-6">
-                    <div className="text-[12px] tracking-[0.18em] uppercase text-navy/55 font-semibold">
-                        Resident Doctor · MBBS
+                {/* Text area */}
+                <div className="mt-0">
+                    {/* Tags (mobile) */}
+                    <div className="flex gap-2 justify-center flex-wrap mb-5">
+                        {tags.map(({ label, color }) => (
+                            <span
+                                key={label}
+                                className="inline-flex items-center gap-1.5 bg-white/60 border border-navy/10 rounded-full px-3 py-1 text-[10px] font-semibold text-navy tracking-[0.03em] uppercase backdrop-blur-sm"
+                            >
+                                <span
+                                    className="w-1 h-1 rounded-full anim-pulse"
+                                    style={{
+                                        background: dotColor[color],
+                                        boxShadow: `0 0 4px ${dotColor[color]}66`,
+                                    }}
+                                />
+                                {label}
+                            </span>
+                        ))}
                     </div>
+
+                    {/* <div className="text-[12px] tracking-[0.18em] uppercase text-navy/55 font-semibold">
+                        Resident Doctor · MBBS
+                    </div> */}
                     <div className="mt-3 font-display text-[24px] leading-[1.08] text-navy font-bold">
                         DR. AKSHATH RAMESH ACHARYA
                     </div>
@@ -156,16 +274,16 @@ export default function Hero() {
             </div>
 
             {/* Desktop / large layout */}
-            <div className="relative z-10 hidden lg:flex w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[60px] pt-28 sm:pt-32 lg:pt-[140px] pb-14 sm:pb-20 lg:pb-[100px] items-center justify-between gap-12 lg:gap-16">
+            <div className="relative z-10 hidden lg:flex w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[80px] pt-28 sm:pt-32 lg:pt-[150px] pb-14 sm:pb-20 lg:pb-[110px] items-center justify-between gap-12 lg:gap-20">
 
                 {/* ── LEFT: Text content ── */}
-                <div className="max-w-[580px] w-full flex-shrink-0">
+                <div className="max-w-[640px] w-full flex-shrink-0">
                     {/* Tags */}
                     <div className="flex gap-2 flex-wrap mb-7 anim-up-1">
                         {tags.map(({ label, color }) => (
                             <span
                                 key={label}
-                                className="inline-flex items-center gap-2 bg-white/60 border border-navy/10 rounded-full px-3.5 py-1.5 text-[11px] font-semibold text-navy tracking-[0.05em] uppercase backdrop-blur-sm"
+                                className="inline-flex items-center gap-2 bg-white/60 border border-navy/10 rounded-full px-4 py-2 text-[12px] font-semibold text-navy tracking-[0.05em] uppercase backdrop-blur-sm"
                             >
                                 <span
                                     className="w-1.5 h-1.5 rounded-full anim-pulse"
@@ -179,11 +297,11 @@ export default function Hero() {
                         ))}
                     </div>
 
-                    <p className="anim-up-2 text-[11px] font-medium text-navy tracking-[0.15em] uppercase mb-4">
+                    {/* <p className="anim-up-2 text-[12px] font-semibold text-navy tracking-[0.15em] uppercase mb-4">
                         Resident Doctor · MBBS
-                    </p>
+                    </p> */}
 
-                    <h1 className="anim-up-3 font-display text-[clamp(44px,5.5vw,72px)] leading-[1.05] text-navy mb-1">
+                    <h1 className="anim-up-3 font-display text-[clamp(48px,6vw,80px)] leading-[1.05] text-navy mb-1">
                         <span className="block">Dr. Akshath</span>
                         <em className="block not-italic" style={{ fontStyle: "italic" }}>
                             Ramesh Acharya
@@ -198,7 +316,7 @@ export default function Hero() {
                                 )}
                                 <span
                                     key={b}
-                                    className="bg-teal-light border border-teal/30 rounded px-3 py-1.5 text-[11px] font-semibold text-white tracking-[0.06em]"
+                                    className="bg-teal-light border border-teal/30 rounded px-3.5 py-2 text-[12px] font-semibold text-white tracking-[0.06em]"
                                 >
                                     {b}
                                 </span>
@@ -206,7 +324,7 @@ export default function Hero() {
                         ))}
                     </div>
 
-                    <p className="anim-up-5 text-[15px] font-light text-navy leading-[1.78] max-w-[490px] mb-10">
+                    <p className="anim-up-5 text-[16.5px] font-light text-navy leading-[1.78] max-w-[520px] mb-10">
                         An enthusiastic and high-energy <strong className="font-bold text-navy">MBBS doctor</strong> with 13+
                         years of experience in medical consultation, counseling, treatment, and clinical practice — with a focus on
                         cardiac critical care, ECHO, and ECMO.
@@ -227,7 +345,7 @@ export default function Hero() {
                         >
                             View Publications
                         </button>
-                        <div className="flex items-center gap-2 text-navy/55 text-[12px] font-medium">
+                        <div className="flex items-center gap-2.5 text-navy/55 text-[13px] font-medium">
                             <span
                                 className="w-2 h-2 rounded-full anim-pulse"
                                 style={{
@@ -241,7 +359,7 @@ export default function Hero() {
                 </div>
 
                 {/* ── RIGHT: Doctor image frame ── */}
-                <div className="anim-left relative flex-shrink-0 w-full max-w-[420px] mx-auto lg:mx-0" style={{ height: "clamp(360px, 58vw, 520px)" }}>
+                <div className="anim-left relative flex-shrink-0 w-full max-w-[460px] mx-auto lg:mx-0" style={{ height: "clamp(400px, 60vw, 560px)" }}>
 
                     {/* Outer decorative ring */}
                     <div
@@ -327,7 +445,7 @@ export default function Hero() {
                             icon={<AwardIcon />}
                             value="13+"
                             sub="Years Experience"
-                            style={{ bottom: 80, left: -60 }}
+                            style={{ bottom: 90, left: -70 }}
                         />
                     </div>
 
@@ -337,7 +455,7 @@ export default function Hero() {
                             icon={<HeartRateIcon />}
                             value="1.4K"
                             sub="Surgeries Done"
-                            style={{ top: 100, right: -60 }}
+                            style={{ top: 110, right: -70 }}
                         />
                     </div>
 
@@ -394,7 +512,7 @@ export default function Hero() {
             </div>
 
             {/* ── Bottom bar ── */}
-            <div className="anim-bottom hidden lg:flex absolute bottom-0 left-0 right-0 z-10 px-4 sm:px-6 lg:px-[60px] pb-10 items-end justify-between">
+            <div className="anim-bottom hidden lg:flex absolute bottom-0 left-0 right-0 z-10 px-4 sm:px-6 lg:px-[80px] pb-10 items-end justify-between">
                 <div className="flex gap-2 flex-wrap">
                     {specs.map(({ icon, label }) => (
                         <div

@@ -33,7 +33,8 @@ export function generateSlotTimesForSchedule(weeklySchedule, breakTimes, dateStr
   const startMinutes = parseTime(daySchedule.startTime);
   const endMinutes = parseTime(daySchedule.endTime);
   const duration = daySchedule.slotDuration;
-  const effectiveBreakTimes = breakTimes || [];
+  // Per-day breakTimes take priority over clinic-level breakTimes
+  const effectiveBreakTimes = daySchedule.breakTimes || breakTimes || [];
 
   const slots = [];
   let current = startMinutes;
