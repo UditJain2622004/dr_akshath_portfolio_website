@@ -5,6 +5,10 @@ import { sendError, sendSuccess, isValidDate, isValidTime } from '../../_utils/a
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
 const TRAVEL_BUFFER_MINUTES = 30;
+const SLOT_DURATION_MINUTES = 10;
+// Minimum gap between start times at different clinics:
+// the first appointment must END, then 30 min travel, then the next can START.
+const CROSS_CLINIC_GAP = SLOT_DURATION_MINUTES + TRAVEL_BUFFER_MINUTES; // 40
 
 /**
  * Public Slots Controller
@@ -72,9 +76,9 @@ export default async function handler(req, res) {
     });
 
     // Current IST time (for filtering past slots on "today")
-    const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const todayIST = nowIST.toLocaleDateString('en-CA');
-    const currentHHmm = `${String(nowIST.getHours()).padStart(2, '0')}:${String(nowIST.getMinutes()).padStart(2, '0')}`;
+    const nowISTStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour12: false });
+    const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const currentHHmm = nowISTStr.split(', ')[1].split(':').slice(0, 2).join(':');
 
     // ── MODE 2: Find clinics available at a specific time ──
     if (time) {
@@ -124,29 +128,17 @@ async function handleClinicQuery(res, ctx) {
       // Check availability with cross-clinic buffer
       const availability = checkSlotAvailability(time, clinic.id, appointmentsByTime);
 
-      const booked = !availability.available || manuallyBlocked || !!manual?.booked;
+      const isLeave = manual?.appointmentId === 'LEAVE' || manual?.isLeave;
+      const booked = !availability.available || manuallyBlocked || isLeave;
 
       slots.push({
         time,
-        booked,
+        booked: !!booked,
         reason: booked
-          ? (manuallyBlocked ? 'blocked' : (!availability.available ? availability.reason : 'booked'))
+          ? (manuallyBlocked ? 'blocked' : (isLeave ? 'on_leave' : (availability.reason || 'booked')))
           : null,
       });
 
-      // Cache instant slots
-      if (dateClass.isInstant && !manual) {
-        const slotId = buildSlotId(clinic.id, date, time);
-        createBatch.set(db.collection('doctorSlots').doc(slotId), {
-          clinicId: clinic.id,
-          date,
-          time,
-          booked,
-          appointmentId: booked ? 'GLOBAL_BOOKED' : null,
-          expiresAt: new Date(date + 'T23:59:59+05:30'),
-        }, { merge: true });
-        hasNewSlots = true;
-      }
     }
 
     responseClinics.push({
@@ -218,6 +210,20 @@ async function handleTimeQuery(res, ctx) {
       continue;
     }
 
+    // Check Leave
+    const isLeave = manual?.appointmentId === 'LEAVE' || manual?.isLeave;
+    if (isLeave) {
+      results.push({
+        clinicId: clinic.id,
+        clinicName: clinic.name || clinic.id,
+        address: clinic.address || null,
+        appointmentOnly: clinic.appointmentOnly || false,
+        available: false,
+        reason: 'on_leave',
+      });
+      continue;
+    }
+
     // Check cross-clinic buffer
     const availability = checkSlotAvailability(time, clinic.id, appointmentsByTime);
 
@@ -249,7 +255,8 @@ async function handleTimeQuery(res, ctx) {
  * Check if a slot at `time` for `clinicId` is available,
  * considering:
  *   1. Exact-time conflict at ANY clinic → booked
- *   2. Within ±30 min of a booking at a DIFFERENT clinic → travel_buffer
+ *   2. Start-to-start gap < 40 min with a DIFFERENT clinic → travel_buffer
+ *      (ensures 30 min gap between END of one 10-min appt and START of next)
  *
  * @returns {{ available: boolean, reason?: string, conflictClinicId?: string }}
  */
@@ -265,8 +272,8 @@ function checkSlotAvailability(time, clinicId, appointmentsByTime) {
       return { available: false, reason: 'booked', conflictClinicId: appts[0]?.clinicId };
     }
 
-    // Cross-clinic travel buffer
-    if (diff < TRAVEL_BUFFER_MINUTES) {
+    // Cross-clinic: need SLOT_DURATION + TRAVEL_BUFFER gap between start times
+    if (diff < CROSS_CLINIC_GAP) {
       const crossClinicAppt = appts.find(a => a.clinicId !== clinicId);
       if (crossClinicAppt) {
         return {

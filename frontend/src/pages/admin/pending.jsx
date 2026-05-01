@@ -3,6 +3,7 @@ import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getBookings, getClinics, updateBooking } from '../../services/adminApi';
 import ClinicFilterBar from '../../components/admin/ClinicFilterBar';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
@@ -149,7 +150,7 @@ export default function PendingPage() {
   const filtered = useMemo(() => {
     const list = selectedClinic ? bookings.filter(b => b.clinicId === selectedClinic) : bookings;
     // Sort: today's appointments first (more urgent)
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toLocalDateStr();
     return [...list].sort((a, b) => {
       const aToday = a.appointmentDate === todayStr ? 0 : 1;
       const bToday = b.appointmentDate === todayStr ? 0 : 1;
@@ -158,8 +159,8 @@ export default function PendingPage() {
     });
   }, [bookings, selectedClinic]);
 
-  const todayItems = filtered.filter(b => b.appointmentDate === new Date().toISOString().split('T')[0]);
-  const laterItems = filtered.filter(b => b.appointmentDate !== new Date().toISOString().split('T')[0]);
+  const todayItems = filtered.filter(b => b.appointmentDate === toLocalDateStr());
+  const laterItems = filtered.filter(b => b.appointmentDate !== toLocalDateStr());
 
   const handleAction = async (appointmentId, action) => {
     setActioning(appointmentId);

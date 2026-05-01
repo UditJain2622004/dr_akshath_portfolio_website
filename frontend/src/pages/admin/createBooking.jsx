@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getClinics, getSlots, createBooking } from '../../services/adminApi';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
@@ -10,7 +11,7 @@ export default function CreateBookingPage({ setPage }) {
   const [clinics, setClinics] = useState([]);
   const [form, setForm] = useState({
     clinicId: '',
-    date: new Date().toISOString().split('T')[0],
+    date: toLocalDateStr(),
     time: '',
     patientName: '',
     patientPhone: '',
@@ -161,7 +162,7 @@ export default function CreateBookingPage({ setPage }) {
             onChange={e => update('date', e.target.value)}
             className="w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition-all focus:ring-2"
             style={{ border: `1px solid ${T.mint}`, fontFamily: 'Outfit', color: T.navy, '--tw-ring-color': T.teal }}
-            min={new Date().toISOString().split('T')[0]}
+            min={toLocalDateStr()}
           />
         </div>
 

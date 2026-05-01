@@ -3,6 +3,7 @@ import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getClinics, getLeaves, createLeave, deleteLeave } from '../../services/adminApi';
 import ConfirmModal from '../../components/admin/ConfirmModal';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
@@ -18,8 +19,8 @@ export default function AddLeavePage({ setPage }) {
   const [success, setSuccess] = useState(null);
 
   const [form, setForm] = useState({
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: toLocalDateStr(),
+    endDate: toLocalDateStr(),
     reason: '',
     scope: 'global',
     clinicId: '',
@@ -99,7 +100,7 @@ export default function AddLeavePage({ setPage }) {
   };
 
   // Separate future/active vs past leaves
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toLocalDateStr();
   const activeLeaves = leaves.filter(l => l.endDate >= todayStr);
   const pastLeaves = leaves.filter(l => l.endDate < todayStr);
 
@@ -258,7 +259,7 @@ export default function AddLeavePage({ setPage }) {
                 <input type="date" value={form.startDate} onChange={e => update('startDate', e.target.value)}
                   className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
                   style={{ border: `1px solid ${T.mint}`, fontFamily: 'Outfit', color: T.navy }}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={toLocalDateStr()}
                 />
               </div>
               <div>

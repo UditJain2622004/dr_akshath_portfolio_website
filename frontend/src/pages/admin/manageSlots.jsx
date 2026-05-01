@@ -3,6 +3,7 @@ import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getClinics, getSlots, manageSlot } from '../../services/adminApi';
 import ConfirmModal from '../../components/admin/ConfirmModal';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
@@ -10,7 +11,7 @@ export default function ManageSlotsPage({ setPage }) {
   const { token } = useAuth();
   const [clinics, setClinics] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState(null);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(toLocalDateStr());
   const [slotsData, setSlotsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actioning, setActioning] = useState(null); // { time, action }
@@ -86,7 +87,7 @@ export default function ManageSlotsPage({ setPage }) {
   const shiftDate = (days) => {
     const d = new Date(date + 'T00:00:00');
     d.setDate(d.getDate() + days);
-    setDate(d.toISOString().split('T')[0]);
+    setDate(toLocalDateStr(d));
   };
 
   const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {
@@ -140,7 +141,7 @@ export default function ManageSlotsPage({ setPage }) {
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
               className="text-sm font-bold text-center outline-none bg-transparent cursor-pointer"
               style={{ color: T.navy, fontFamily: 'Outfit' }}
-              min={new Date().toISOString().split('T')[0]}
+              min={toLocalDateStr()}
             />
             <p className="text-[10px] text-slate-400" style={{ fontFamily: 'Outfit' }}>{dateLabel}</p>
           </div>

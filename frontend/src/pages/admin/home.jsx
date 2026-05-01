@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboard, getClinics } from '../../services/adminApi';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
-const today = new Date().toISOString().split('T')[0];
+const today = toLocalDateStr();
 
 // Clinic colour palette
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];

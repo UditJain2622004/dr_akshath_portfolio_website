@@ -7,6 +7,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
 const TRAVEL_BUFFER_MINUTES = 30;
+const SLOT_DURATION_MINUTES = 10;
+const CROSS_CLINIC_GAP = SLOT_DURATION_MINUTES + TRAVEL_BUFFER_MINUTES; // 40
 
 export default async function handler(req, res) {
   if (req.method === 'GET') return handleGet(req, res);
@@ -110,58 +112,42 @@ async function handlePost(req, res) {
     const appointmentRef = db.collection('appointments').doc();
 
     await db.runTransaction(async (transaction) => {
-      // Fetch ALL active appointments for this date to check cross-clinic buffer
+      // ── ALL READS FIRST ──
       const allApptQuery = db.collection('appointments')
         .where('appointmentDate', '==', date)
         .where('status', 'in', ACTIVE_STATUSES);
       const allApptSnapshot = await transaction.get(allApptQuery);
 
-      const slotMinutes = parseTime(time);
+      let slotDoc = null;
+      if (dateClass.isInstant) {
+        slotDoc = await transaction.get(slotRef);
+      }
 
+      // ── VALIDATION ──
+      const slotMinutes = parseTime(time);
       for (const doc of allApptSnapshot.docs) {
         const appt = doc.data();
         const apptMinutes = parseTime(appt.timeSlot);
         const diff = Math.abs(slotMinutes - apptMinutes);
-
-        // Exact time conflict — doctor is busy at this time
-        if (diff === 0) {
-          throw new Error('TIME_CONFLICT');
-        }
-
-        // Cross-clinic travel buffer — ±30 min gap required between different clinics
-        if (diff < TRAVEL_BUFFER_MINUTES && appt.clinicId !== clinicId) {
-          throw new Error('TRAVEL_BUFFER_CONFLICT');
-        }
+        if (diff === 0) throw new Error('TIME_CONFLICT');
+        if (diff < CROSS_CLINIC_GAP && appt.clinicId !== clinicId) throw new Error('TRAVEL_BUFFER_CONFLICT');
       }
 
-      const appointmentData = {
-        patientId: patientPhone,
-        clinicId,
-        patientName,
-        patientPhone,
-        patientEmail: patientEmail || null,
-        appointmentDate: date,
-        timeSlot: time,
-        bookingType,
-        type: appointmentType,
-        status: 'pending',
-        createdAt: FieldValue.serverTimestamp(),
-        confirmedAt: null,
-      };
+      if (slotDoc && slotDoc.exists && slotDoc.data().booked) {
+        throw new Error('SLOT_ALREADY_BOOKED');
+      }
 
-      transaction.set(appointmentRef, appointmentData);
+      // ── ALL WRITES ──
+      transaction.set(appointmentRef, {
+        patientId: patientPhone, clinicId, patientName, patientPhone,
+        patientEmail: patientEmail || null, appointmentDate: date,
+        timeSlot: time, bookingType, type: appointmentType,
+        status: 'pending', createdAt: FieldValue.serverTimestamp(), confirmedAt: null,
+      });
 
       if (dateClass.isInstant) {
-        const slotDoc = await transaction.get(slotRef);
-        if (slotDoc.exists && slotDoc.data().booked) {
-          throw new Error('SLOT_ALREADY_BOOKED');
-        }
-
         transaction.set(slotRef, {
-          clinicId,
-          date,
-          time,
-          booked: true,
+          clinicId, date, time, booked: true,
           appointmentId: appointmentRef.id,
           expiresAt: new Date(date + 'T23:59:59+05:30'),
         }, { merge: true });

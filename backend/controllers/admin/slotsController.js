@@ -1,10 +1,13 @@
 import { db } from '../../_utils/firebaseAdmin.js';
 import { verifyAuth } from '../../_utils/authMiddleware.js';
 import { sendError, sendSuccess, validateRequired, isValidDate, isValidTime } from '../../_utils/apiHelpers.js';
-import { generateSlotTimes, buildSlotId, classifyBookingDate } from '../../_utils/slotGenerator.js';
+import { generateSlotTimes, buildSlotId, classifyBookingDate, parseTime } from '../../_utils/slotGenerator.js';
 import { checkDoctorLeave } from '../../_utils/leaveChecker.js';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
+const TRAVEL_BUFFER_MINUTES = 30;
+const SLOT_DURATION_MINUTES = 10;
+const CROSS_CLINIC_GAP = SLOT_DURATION_MINUTES + TRAVEL_BUFFER_MINUTES; // 40
 
 export default async function handler(req, res) {
   if (req.method === 'GET') return handleGet(req, res);
@@ -69,10 +72,29 @@ async function handleGet(req, res) {
         const isBlockedManually = manual?.appointmentId === 'BLOCKED';
         const isBookedByPatient = !!appointment;
 
+        // Travel Buffer check
+        let travelConflict = null;
+        if (!isBookedByPatient) {
+          const slotMinutes = parseTime(time);
+          for (const [apptTime, appt] of Object.entries(appointmentsByTime)) {
+            if (appt.clinicId === clinic.id) continue;
+            const apptMinutes = parseTime(apptTime);
+            const diff = Math.abs(slotMinutes - apptMinutes);
+            if (diff < CROSS_CLINIC_GAP) {
+              travelConflict = appt.clinicId;
+              break;
+            }
+          }
+        }
+
+        const isBooked = isBookedByPatient || isBlockedManually || isBlockedByLeave || !!travelConflict;
+
         return {
           time,
-          booked: isBookedByPatient || isBlockedManually || isBlockedByLeave || manual?.booked || false,
+          booked: isBooked,
           appointmentId: appointment?.id || (isBlockedByLeave ? 'LEAVE' : (isBlockedManually ? 'BLOCKED' : null)),
+          reason: isBooked ? (isBlockedManually ? 'blocked' : (isBlockedByLeave ? 'on_leave' : (travelConflict ? 'travel_buffer' : 'booked'))) : null,
+          conflictClinicId: travelConflict,
           isBlocked: isBlockedManually || isBlockedByLeave,
           isLeave: isBlockedByLeave,
           isManual: !!manual,

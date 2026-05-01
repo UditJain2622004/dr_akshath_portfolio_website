@@ -8,6 +8,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
 const TRAVEL_BUFFER_MINUTES = 30;
+const SLOT_DURATION_MINUTES = 10;
+const CROSS_CLINIC_GAP = SLOT_DURATION_MINUTES + TRAVEL_BUFFER_MINUTES; // 40 min start-to-start gap
 
 export default async function handler(req, res) {
   if (req.method === 'GET' && req.query.checkFollowup === 'true') {
@@ -180,46 +182,43 @@ async function handlePost(req, res) {
     const slotRef = db.collection('doctorSlots').doc(buildSlotId(clinicId, date, time));
 
     await db.runTransaction(async (transaction) => {
-      // Fetch ALL active appointments for this date to check cross-clinic buffer
+      // ── ALL READS FIRST ──
       const allApptQuery = db.collection('appointments')
         .where('appointmentDate', '==', date)
         .where('status', 'in', ACTIVE_STATUSES);
       const allApptSnapshot = await transaction.get(allApptQuery);
 
+      let slotDoc = null;
+      if (dateClass.isInstant) {
+        slotDoc = await transaction.get(slotRef);
+      }
+
+      // ── VALIDATION ──
       const slotMinutes = parseTime(time);
       for (const doc of allApptSnapshot.docs) {
         const appt = doc.data();
         const apptMinutes = parseTime(appt.timeSlot);
         const diff = Math.abs(slotMinutes - apptMinutes);
         if (diff === 0) throw new Error('TIME_CONFLICT');
-        if (diff < TRAVEL_BUFFER_MINUTES && appt.clinicId !== clinicId) throw new Error('TRAVEL_BUFFER_CONFLICT');
+        if (diff < CROSS_CLINIC_GAP && appt.clinicId !== clinicId) throw new Error('TRAVEL_BUFFER_CONFLICT');
       }
 
+      if (slotDoc && slotDoc.exists && slotDoc.data().booked) throw new Error('SLOT_ALREADY_BOOKED');
+
+      // ── ALL WRITES ──
+      const followUpType = await detectFollowUp(patientPhone);
       transaction.set(appointmentRef, {
-        patientId: patientPhone,
-        clinicId,
-        patientName,
-        patientPhone,
-        patientEmail: patientEmail || null,
-        appointmentDate: date,
-        timeSlot: time,
-        bookingType,
-        type: await detectFollowUp(patientPhone),
-        status: appointmentStatus,
-        createdAt: FieldValue.serverTimestamp(),
+        patientId: patientPhone, clinicId, patientName, patientPhone,
+        patientEmail: patientEmail || null, appointmentDate: date,
+        timeSlot: time, bookingType, type: followUpType,
+        status: appointmentStatus, createdAt: FieldValue.serverTimestamp(),
         confirmedAt: appointmentStatus === 'confirmed' ? FieldValue.serverTimestamp() : null,
         createdByAdmin: true,
       });
 
       if (dateClass.isInstant) {
-        const slotDoc = await transaction.get(slotRef);
-        if (slotDoc.exists && slotDoc.data().booked) throw new Error('SLOT_ALREADY_BOOKED');
-
         transaction.set(slotRef, {
-          clinicId,
-          date,
-          time,
-          booked: true,
+          clinicId, date, time, booked: true,
           appointmentId: appointmentRef.id,
           expiresAt: new Date(date + 'T23:59:59+05:30'),
         }, { merge: true });

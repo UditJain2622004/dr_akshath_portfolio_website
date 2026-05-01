@@ -4,19 +4,20 @@ import { useAuth } from '../../context/AuthContext';
 import { getSchedule, getClinics, updateBooking } from '../../services/adminApi';
 import ScheduleCard from '../../components/admin/appointmentCard';
 import ClinicFilterBar from '../../components/admin/ClinicFilterBar';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
 const STATUS_FILTERS = [
-  { id: 'all', label: 'All', activeBg: T.teal },
   { id: 'confirmed', label: 'Confirmed', activeBg: '#3b82f6' },
   { id: 'completed', label: 'Done', activeBg: '#16a34a' },
   { id: 'pending', label: 'Pending', activeBg: '#d97706' },
   { id: 'cancelled', label: 'Cancelled', activeBg: '#dc2626' },
+  { id: 'all', label: 'All', activeBg: T.teal },
 ];
 
 function toYMD(date) {
-  return date.toISOString().split('T')[0];
+  return toLocalDateStr(date);
 }
 
 function offsetDate(base, days) {
@@ -33,7 +34,7 @@ export default function SchedulePage() {
   const [error, setError] = useState(null);
 
   const [selectedClinic, setSelectedClinic] = useState(null); // null = all
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('confirmed');
   const [dateOffset, setDateOffset] = useState(0);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState(null);
