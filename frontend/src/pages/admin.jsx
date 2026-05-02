@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import Navbar from '../components/admin/navbar';
 import BottomBar from '../components/admin/bottomTabs';
 import HomePage from './admin/home';
@@ -12,6 +13,7 @@ import ManageSlotsPage from './admin/manageSlots';
 import AddLeavePage from './admin/addLeave';
 import { T, I } from '../components/admin/theme';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase';
 import { getBookings } from '../services/adminApi';
 
 const SidebarItem = ({ id, icon, label, badge, active, onClick }) => (
@@ -39,18 +41,36 @@ export default function Admin() {
   // Extract current page from URL: /admin/schedule -> schedule
   const currentPath = location.pathname.split('/').pop() || 'home';
 
-  // Poll pending count every 90 seconds
-  useEffect(() => {
+  const fetchPendingCount = useCallback(() => {
     if (!token) return;
-    const fetchPending = () => {
-      getBookings(token, { status: 'pending' })
-        .then(r => setPendingCount((r.bookings || []).length))
-        .catch(() => {});
-    };
-    fetchPending();
-    const interval = setInterval(fetchPending, 90_000);
-    return () => clearInterval(interval);
+    getBookings(token, { status: 'pending' })
+      .then(r => setPendingCount((r.bookings || []).length))
+      .catch(() => {});
   }, [token]);
+
+  // Keep pending badge in sync with Firestore in realtime.
+  useEffect(() => {
+    if (!user || !token) {
+      setPendingCount(0);
+      return undefined;
+    }
+
+    const pendingQuery = query(
+      collection(db, 'appointments'),
+      where('status', '==', 'pending')
+    );
+
+    const unsubscribe = onSnapshot(
+      pendingQuery,
+      (snapshot) => setPendingCount(snapshot.size),
+      (error) => {
+        console.error('Pending request realtime listener failed:', error);
+        fetchPendingCount();
+      }
+    );
+
+    return unsubscribe;
+  }, [user, token, fetchPendingCount]);
 
   const tabs = [
     { id: 'home',     icon: 'home',     label: 'Dashboard' },
@@ -59,8 +79,12 @@ export default function Admin() {
     { id: 'profile',  icon: 'user',     label: 'Profile' },
   ];
 
-  const handleNavigate = (id) => {
-    navigate(`/admin/${id}`);
+  const handleNavigate = (id, filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    if (filters.clinicId) params.set('clinicId', filters.clinicId);
+    const query = params.toString();
+    navigate(`/admin/${id}${query ? `?${query}` : ''}`);
   };
 
   const pageLabel = tabs.find(t => t.id === currentPath)?.label || 'Dashboard';
@@ -138,9 +162,12 @@ export default function Admin() {
           <div className="h-full w-full max-w-5xl mx-auto md:px-8 md:py-6 bg-white md:bg-transparent">
             <Routes>
               <Route index element={<Navigate to="home" replace />} />
-              <Route path="home" element={<HomePage setPage={handleNavigate} />} />
+              <Route path="home" element={<HomePage setPage={handleNavigate} pendingCount={pendingCount} />} />
               <Route path="schedule" element={<SchedulePage />} />
-              <Route path="pending" element={<PendingPage />} />
+              <Route path="pending" element={<PendingPage onPendingChanged={() => {
+                setPendingCount(count => Math.max(0, count - 1));
+                fetchPendingCount();
+              }} />} />
               <Route path="history" element={<HistoryPage />} />
               <Route path="profile" element={<ProfilePage setPage={handleNavigate} />} />
               <Route path="create" element={<CreateBookingPage setPage={handleNavigate} />} />

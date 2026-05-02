@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getBookings, getClinics, updateBooking } from '../../services/adminApi';
@@ -116,16 +116,16 @@ function PendingCard({ booking, clinics, onConfirm, onReject }) {
   );
 }
 
-export default function PendingPage() {
+export default function PendingPage({ onPendingChanged }) {
   const { token } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedClinic, setSelectedClinic] = useState(null);
-  const [actioning, setActioning] = useState(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     setError(null);
     try {
@@ -140,12 +140,11 @@ export default function PendingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    if (!token) return;
     fetchAll();
-  }, [token]);
+  }, [fetchAll]);
 
   const filtered = useMemo(() => {
     const list = selectedClinic ? bookings.filter(b => b.clinicId === selectedClinic) : bookings;
@@ -163,14 +162,12 @@ export default function PendingPage() {
   const laterItems = filtered.filter(b => b.appointmentDate !== toLocalDateStr());
 
   const handleAction = async (appointmentId, action) => {
-    setActioning(appointmentId);
     try {
       await updateBooking(token, { appointmentId, action });
       setBookings(prev => prev.filter(b => b.id !== appointmentId));
+      onPendingChanged?.();
     } catch (err) {
       alert(err.message);
-    } finally {
-      setActioning(null);
     }
   };
 
@@ -200,6 +197,14 @@ export default function PendingPage() {
               {loading ? 'Loading…' : `${filtered.length} request${filtered.length !== 1 ? 's' : ''} awaiting confirmation`}
             </p>
           </div>
+          <button onClick={fetchAll}
+            disabled={loading}
+            aria-label="Refresh requests"
+            title="Refresh requests"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-60"
+            style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.teal, fontFamily: 'Outfit' }}>
+            <span className={loading ? 'animate-spin' : ''}><I n="refresh" s={15} /></span>
+          </button>
         </div>
 
         {/* Clinic filter */}

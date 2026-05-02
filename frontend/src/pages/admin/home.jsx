@@ -9,16 +9,17 @@ const today = toLocalDateStr();
 // Clinic colour palette
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
-const StatCard = ({ label, value, sub, bg, color, border }) => (
-  <div className="rounded-2xl md:rounded-3xl p-3 md:p-6 text-center transition-all hover:shadow-lg"
+const StatCard = ({ label, value, sub, bg, color, border, onClick }) => (
+  <button type="button" onClick={onClick}
+    className="rounded-2xl md:rounded-3xl p-3 md:p-6 text-center transition-all hover:shadow-lg hover:-translate-y-0.5"
     style={{ background: bg, border: `1.5px solid ${border}` }}>
     <p className="text-2xl md:text-4xl font-bold" style={{ color, fontFamily: 'Outfit' }}>{value}</p>
     <p className="mt-1 text-[11px] md:text-sm font-semibold" style={{ color: T.navy, fontFamily: 'Outfit' }}>{label}</p>
     <p className="text-[9px] md:text-xs" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>{sub}</p>
-  </div>
+  </button>
 );
 
-export default function HomePage({ setPage }) {
+export default function HomePage({ setPage, pendingCount }) {
   const { token } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [clinics, setClinics] = useState([]);
@@ -28,32 +29,41 @@ export default function HomePage({ setPage }) {
 
   useEffect(() => {
     if (!token) return;
-    setLoading(true);
+    let cancelled = false;
     Promise.all([getDashboard(token, today), getClinics(token)])
       .then(([dash, cl]) => {
+        if (cancelled) return;
         setDashboard(dash);
         setClinics(cl.clinics || []);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const totals = dashboard?.totals || {};
   const backlog = dashboard?.backlog || {};
   const byClinic = dashboard?.byClinic || [];
+  const livePendingCount = pendingCount ?? backlog.pending;
 
   // Build per-clinic stat lookup
   const clinicMap = Object.fromEntries((clinics || []).map(c => [c.id, c]));
 
+  const leftCount = (totals.confirmed ?? 0);
+
   const stats = [
-    { label: 'Total Today', value: totals.total ?? '—', sub: 'appointments', bg: "white", color: T.teal, border: T.tealLight + '44' },
-    { label: 'Completed Today', value: totals.completed ?? '—', sub: 'done today', bg: "white", color: '#16a34a', border: '#86efac66' },
-    { label: 'Cancelled Today', value: totals.cancelled ?? '—', sub: 'no-show / cancelled', bg: "white", color: '#dc2626', border: '#fecaca66' },
+    { label: 'Left Today', value: totals.total != null ? leftCount : '—', sub: 'left today', bg: "white", color: T.teal, border: T.tealLight + '44', status: 'all' },
+    { label: 'Completed', value: totals.completed ?? '—', sub: 'done today', bg: "white", color: '#16a34a', border: '#86efac66', status: 'completed' },
+    { label: 'Cancelled', value: totals.cancelled ?? '—', sub: 'no-show / cancelled', bg: "white", color: '#dc2626', border: '#fecaca66', status: 'cancelled' },
   ];
 
   const quickNav = [
     { id: 'schedule', icon: 'calendar', label: 'Schedule', desc: "Today's list", accent: T.teal, bg: T.hero },
-    { id: 'pending', icon: 'bell', label: 'Pending', desc: `${backlog.pending ?? '…'} awaiting`, accent: '#d97706', bg: '#fff7ed', badge: backlog.pending },
+    { id: 'pending', icon: 'bell', label: 'Pending Requests', desc: `${livePendingCount ?? '…'} awaiting`, accent: '#d97706', bg: '#fff7ed', badge: livePendingCount },
     { id: 'create', icon: 'plus', label: 'New Booking', desc: 'Manual booking', accent: '#6366f1', bg: '#f5f3ff' },
     { id: 'manage', icon: 'sliders', label: 'Manage Slots', desc: 'Block / free slots', accent: '#ec4899', bg: '#fdf2f8' },
     { id: 'delay', icon: 'delay', label: 'Add Leave', desc: 'Mark unavailable', accent: '#f97316', bg: '#fff7ed' },
@@ -77,13 +87,19 @@ export default function HomePage({ setPage }) {
             ? Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-2xl md:rounded-3xl p-3 md:p-6 animate-pulse" style={{ background: '#f1f5f9', minHeight: 80 }} />
             ))
-            : stats.map(s => <StatCard key={s.label} {...s} />)
+            : stats.map(s => (
+              <StatCard
+                key={s.label}
+                {...s}
+                onClick={() => setPage('schedule', { status: s.status })}
+              />
+            ))
           }
         </div>
       </div>
 
       {/* ── Pending Alert ── */}
-      {!loading && (backlog.pending > 0) && (
+      {!loading && (livePendingCount > 0) && (
         <div className="mx-4 mt-4 md:mx-0">
           <button onClick={() => setPage('pending')} className="w-full rounded-2xl p-3.5 flex items-center justify-between hover:opacity-90 transition-opacity"
             style={{ background: '#fffbeb', border: '1.5px solid #fcd34d' }}>
@@ -93,7 +109,7 @@ export default function HomePage({ setPage }) {
               </div>
               <div className="text-left">
                 <p className="font-bold text-[13px]" style={{ color: T.navy, fontFamily: 'Outfit' }}>
-                  {backlog.pending} Pending Request{backlog.pending !== 1 ? 's' : ''}
+                  {livePendingCount} Pending Request{livePendingCount !== 1 ? 's' : ''}
                 </p>
                 <p className="text-[11px]" style={{ color: '#92400e', fontFamily: 'Outfit' }}>Tap to review & confirm</p>
               </div>
@@ -114,7 +130,9 @@ export default function HomePage({ setPage }) {
               const clinic = clinicMap[c.clinicId];
               const color = CLINIC_COLORS[idx % CLINIC_COLORS.length];
               return (
-                <div key={c.clinicId} className="rounded-2xl p-3.5 flex items-center gap-3"
+                <button key={c.clinicId} type="button"
+                  onClick={() => setPage('schedule', { status: 'all', clinicId: c.clinicId })}
+                  className="rounded-2xl p-3.5 flex items-center gap-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5"
                   style={{ background: 'white', border: `1px solid ${T.mint}`, boxShadow: '0 2px 8px rgba(7,25,46,0.04)' }}>
                   <div className="w-2.5 h-10 rounded-full flex-shrink-0" style={{ background: color }} />
                   <div className="flex-1 min-w-0">
@@ -136,7 +154,7 @@ export default function HomePage({ setPage }) {
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

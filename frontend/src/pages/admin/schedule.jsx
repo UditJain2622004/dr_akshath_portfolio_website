@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getSchedule, getClinics, updateBooking } from '../../services/adminApi';
@@ -9,9 +10,9 @@ import { toLocalDateStr } from '../../utils/dateUtils';
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
 const STATUS_FILTERS = [
-  { id: 'confirmed', label: 'Confirmed', activeBg: '#3b82f6' },
+  { id: 'confirmed', label: 'Left Today', activeBg: '#3b82f6' },
   { id: 'completed', label: 'Done', activeBg: '#16a34a' },
-  { id: 'pending', label: 'Pending', activeBg: '#d97706' },
+  { id: 'pending', label: 'Pending Requests', activeBg: '#d97706' },
   { id: 'cancelled', label: 'Cancelled', activeBg: '#dc2626' },
   { id: 'all', label: 'All', activeBg: T.teal },
 ];
@@ -28,6 +29,7 @@ function offsetDate(base, days) {
 
 export default function SchedulePage() {
   const { token } = useAuth();
+  const [searchParams] = useSearchParams();
   const [clinics, setClinics] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,14 +48,14 @@ export default function SchedulePage() {
   const displayDate = isToday ? 'Today' : currentDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
   const fullDate = currentDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // Fetch clinics once
   useEffect(() => {
-    if (!token) return;
-    getClinics(token).then(r => setClinics(r.clinics || [])).catch(console.error);
-  }, [token]);
+    const status = searchParams.get('status');
+    const clinicId = searchParams.get('clinicId');
+    setStatusFilter(STATUS_FILTERS.some(f => f.id === status) ? status : 'confirmed');
+    setSelectedClinic(clinicId || null);
+  }, [searchParams]);
 
-  // Fetch schedule whenever date or clinic changes
-  useEffect(() => {
+  const fetchSchedule = useCallback(() => {
     if (!token) return;
     setLoading(true);
     setError(null);
@@ -66,6 +68,17 @@ export default function SchedulePage() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [token, dateStr, selectedClinic]);
+
+  // Fetch clinics once
+  useEffect(() => {
+    if (!token) return;
+    getClinics(token).then(r => setClinics(r.clinics || [])).catch(console.error);
+  }, [token]);
+
+  // Fetch schedule whenever date or clinic changes
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
 
   // Client-side status + search filter
   const filtered = useMemo(() => {
@@ -85,9 +98,6 @@ export default function SchedulePage() {
     cancelled: appointments.filter(a => ['cancelled', 'rejected'].includes(a.status)).length,
   }), [appointments]);
 
-  const completedCount = counts.completed;
-  const activeCount = appointments.filter(a => !['cancelled', 'rejected'].includes(a.status)).length;
-
   // Group by clinic when "All Clinics" selected
   const grouped = useMemo(() => {
     if (selectedClinic) return null; // flat list
@@ -103,9 +113,7 @@ export default function SchedulePage() {
   const handleAction = async (appointmentId, action) => {
     try {
       await updateBooking(token, { appointmentId, action });
-      // Re-fetch
-      const r = await getSchedule(token, { dateFrom: dateStr, dateTo: dateStr, clinicId: selectedClinic || undefined });
-      setAppointments(r.schedule || []);
+      fetchSchedule();
       setExpandedId(null);
     } catch (err) {
       alert(err.message);
@@ -130,8 +138,9 @@ export default function SchedulePage() {
       <div className="sticky top-0 z-10" style={{ background: T.white, borderBottom: `1px solid ${T.mint}` }}>
         {/* Date nav */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
-          <button onClick={() => setDateOffset(d => d - 1)}
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
+          <button onClick={() => setDateOffset(d => Math.max(0, d - 1))}
+            disabled={isToday}
+            className="w-8 h-8 rounded-xl flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-35"
             style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.navy }}>
             <I n="chevL" s={16} />
           </button>
@@ -139,11 +148,21 @@ export default function SchedulePage() {
             <p className="font-bold" style={{ color: T.navy, fontFamily: 'Outfit', fontSize: 14 }}>{displayDate}</p>
             <p className="text-[10px]" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>{fullDate}</p>
           </div>
-          <button onClick={() => setDateOffset(d => d + 1)}
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.navy }}>
-            <I n="chevR" s={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchSchedule}
+              disabled={loading}
+              aria-label="Refresh schedule"
+              title="Refresh schedule"
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-60"
+              style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.teal, fontFamily: 'Outfit' }}>
+              <span className={loading ? 'animate-spin' : ''}><I n="refresh" s={15} /></span>
+            </button>
+            <button onClick={() => setDateOffset(d => d + 1)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.navy }}>
+              <I n="chevR" s={16} />
+            </button>
+          </div>
         </div>
 
         {/* Progress bar */}

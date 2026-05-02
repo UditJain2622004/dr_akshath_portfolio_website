@@ -5,15 +5,9 @@ import { getClinics, getSlotsByClinic, getSlotsByTime, bookAppointment } from ".
 const reasons = ["General Consultation", "Follow-up Visit", "Second Opinion", "Preventive Check", "Other"];
 
 function toDateStr(d) { return d.toLocaleDateString("en-CA"); }
-function startOfWeek(d) {
-  const date = new Date(d); date.setHours(0,0,0,0);
-  date.setDate(date.getDate() - ((date.getDay()+6)%7));
-  return date;
-}
 function addDays(d,n) { const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function norm(d) { const x=new Date(d); x.setHours(0,0,0,0); return x; }
 function fmtShort(d) { return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
-function fmtLong(d) { return d.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"}); }
 
 /** Classify slot time as Morning (<12:00) or Evening */
 function groupSlots(slots) {
@@ -22,10 +16,42 @@ function groupSlots(slots) {
   return { morning, evening };
 }
 
+function BookingStatusModal({ status, onClose }) {
+  if (!status) return null;
+
+  const isSuccess = status.type === "success";
+  const color = isSuccess ? "#16a34a" : "#dc2626";
+  const bg = isSuccess ? "#f0fdf4" : "#fef2f2";
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative w-full max-w-[360px] rounded-[28px] bg-white p-6 text-center shadow-2xl">
+        <div
+          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold"
+          style={{ background: bg, color }}
+        >
+          {isSuccess ? "✓" : "!"}
+        </div>
+        <h3 className="font-display text-xl font-bold text-navy">{status.title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-navy/55">{status.message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 w-full rounded-2xl py-3 text-sm font-semibold text-white transition active:scale-95"
+          style={{ background: color }}
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Booking() {
   const ref = useReveal();
   const [mode, setMode] = useState("clinic"); // "clinic" | "time"
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [weekStart, setWeekStart] = useState(() => norm(new Date()));
   const [selectedDate, setSelectedDate] = useState(() => norm(new Date()));
   const [clinics, setClinics] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState(null);
@@ -42,11 +68,11 @@ export default function Booking() {
   const [reason, setReason] = useState(reasons[0]);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(null);
-  const [error, setError] = useState(null);
+  const [statusModal, setStatusModal] = useState(null);
 
   const days = Array.from({length:7}).map((_,i)=>addDays(weekStart,i));
   const today = norm(new Date()).getTime();
+  const isAtTodayStart = norm(weekStart).getTime() <= today;
   const dateStr = toDateStr(selectedDate);
 
   // Load clinics once
@@ -94,20 +120,36 @@ export default function Booking() {
   }
 
   const handleSubmit = async () => {
-    if (!fullName || !phone) { setError("Name and phone are required"); return; }
+    if (!fullName || !phone) {
+      setStatusModal({ type: "error", title: "Missing details", message: "Name and phone are required to book an appointment." });
+      return;
+    }
     const clinicId = mode === "clinic" ? selectedClinic : selectedClinic;
     const time = mode === "clinic" ? selectedTime : timeInput;
-    if (!clinicId || !time) { setError("Please select a clinic and time slot"); return; }
+    if (!clinicId || !time) {
+      setStatusModal({ type: "error", title: "Select a slot", message: "Please select a clinic and time slot before confirming." });
+      return;
+    }
 
-    setSubmitting(true); setError(null);
+    setSubmitting(true);
     try {
       const r = await bookAppointment({
         clinicId, date: dateStr, time, patientName: fullName,
         patientPhone: phone, patientEmail: email || undefined,
       });
-      setSuccess(r.message || "Appointment booked successfully!");
+      setStatusModal({
+        type: "success",
+        title: "Appointment requested",
+        message: r.message || "Appointment booked successfully!",
+      });
       setFullName(""); setEmail(""); setPhone(""); setNotes(""); setSelectedTime("");
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      setStatusModal({
+        type: "error",
+        title: "Could not book",
+        message: err.message || "This slot is not available. Please select another option.",
+      });
+    }
     finally { setSubmitting(false); }
   };
 
@@ -144,11 +186,11 @@ export default function Booking() {
         {/* Mode toggle */}
         <div className="reveal max-w-md mx-auto mb-8">
           <div className="booking-mode-toggle">
-            <button className={mode==="clinic"?"active":""} onClick={()=>{setMode("clinic");setSelectedTime("");setError(null);setSuccess(null);}}>
-              🏥 Choose Clinic First
+            <button className={mode==="clinic"?"active":""} onClick={()=>{setMode("clinic");setSelectedTime("");}}>
+              Choose Clinic First
             </button>
-            <button className={mode==="time"?"active":""} onClick={()=>{setMode("time");setSelectedClinic(null);setError(null);setSuccess(null);}}>
-              🕐 Choose Time First
+            <button className={mode==="time"?"active":""} onClick={()=>{setMode("time");setSelectedClinic(null);}}>
+              Choose Time First
             </button>
           </div>
         </div>
@@ -164,7 +206,12 @@ export default function Booking() {
                   <span className="text-[11px] text-navy/40">{weekStart.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" className="w-9 h-9 rounded-lg border border-navy/10 bg-white hover:bg-navy/5 transition" onClick={()=>setWeekStart(addDays(weekStart,-7))}>‹</button>
+                  <button
+                    type="button"
+                    disabled={isAtTodayStart}
+                    className="w-9 h-9 rounded-lg border border-navy/10 bg-white hover:bg-navy/5 transition disabled:opacity-35 disabled:cursor-not-allowed"
+                    onClick={()=>!isAtTodayStart && setWeekStart(addDays(weekStart,-7))}
+                  >‹</button>
                   <button type="button" className="w-9 h-9 rounded-lg border border-navy/10 bg-white hover:bg-navy/5 transition" onClick={()=>setWeekStart(addDays(weekStart,7))}>›</button>
                 </div>
               </div>
@@ -278,7 +325,7 @@ export default function Booking() {
                     {loading ? (
                       <div className="flex flex-col gap-3">{Array.from({length:3}).map((_,i)=><div key={i} className="slot-skeleton" style={{height:70}}/>)}</div>
                     ) : clinicResults.length === 0 ? (
-                      <p className="text-[13px] text-navy/40 text-center py-6">No clinics found.</p>
+                      <p className="text-[13px] text-navy/40 text-center py-6">No clinics are available for this time.</p>
                     ) : (
                       <div className="flex flex-col gap-3">
                         {clinicResults.map(cr => {
@@ -296,7 +343,7 @@ export default function Booking() {
                                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{background:"rgba(15,140,122,0.1)",color:"#0f8c7a"}}>Available</span>
                                 ) : (
                                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{background:"#fef2f2",color:"#dc2626"}}>
-                                    {cr.reason === "travel_buffer" ? "Travel conflict" : cr.reason === "no_slot" ? "No schedule" : "Unavailable"}
+                                    Not available
                                   </span>
                                 )}
                               </div>
@@ -347,20 +394,6 @@ export default function Booking() {
                 <div className="text-[11px] text-navy/45 mt-1">Kindly share accurate details to confirm your slot.</div>
               </div>
             </div>
-
-            {/* Status banners */}
-            {success && (
-              <div className="mb-4 rounded-xl border p-4 flex items-center gap-3" style={{background:"#f0fdf4",borderColor:"#bbf7d0"}}>
-                <span style={{color:"#16a34a",fontSize:18}}>✓</span>
-                <p className="text-[13px] font-semibold" style={{color:"#16a34a"}}>{success}</p>
-              </div>
-            )}
-            {error && (
-              <div className="mb-4 rounded-xl border p-4 flex items-center gap-3" style={{background:"#fef2f2",borderColor:"#fecaca"}}>
-                <span style={{color:"#dc2626",fontSize:18}}>✕</span>
-                <p className="text-[13px] font-semibold" style={{color:"#dc2626"}}>{error}</p>
-              </div>
-            )}
 
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
@@ -424,6 +457,7 @@ export default function Booking() {
           </div>
         </div>
       </div>
+      <BookingStatusModal status={statusModal} onClose={() => setStatusModal(null)} />
     </section>
   );
 }

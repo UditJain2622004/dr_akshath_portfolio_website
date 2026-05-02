@@ -146,7 +146,7 @@ export default function CreateBookingPage({ setPage }) {
                     minWidth: 120,
                   }}>
                   <p className="text-xs font-bold truncate" style={{ fontFamily: 'Outfit' }}>{clinic.name}</p>
-                  <p className="text-[9px] mt-0.5 truncate" style={{ opacity: 0.7, fontFamily: 'Outfit' }}>{clinic.address || 'Clinic'}</p>
+                  {/* <p className="text-[9px] mt-0.5 truncate" style={{ opacity: 0.7, fontFamily: 'Outfit' }}>{clinic.address || 'Clinic'}</p> */}
                 </button>
               );
             })}
