@@ -52,6 +52,21 @@ function getAdminApp() {
     return _app;
   }
 
+  // 4. Managed Google/Firebase runtimes (App Hosting, Cloud Run, etc.)
+  // These environments provide ADC automatically via metadata server.
+  const isManagedRuntime = Boolean(
+    process.env.K_SERVICE || // Cloud Run / App Hosting
+    process.env.FUNCTION_TARGET || // Cloud Functions
+    process.env.GAE_ENV || // App Engine
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT
+  );
+  if (isManagedRuntime) {
+    console.log('Firebase: Initializing via managed runtime ADC');
+    _app = initializeApp({ credential: applicationDefault() });
+    return _app;
+  }
+
   throw new Error(
     'Firebase Admin credentials are missing. Place serviceAccountKey.json in the backend root or set appropriate environment variables.'
   );
