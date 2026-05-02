@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useReveal } from "../hooks/useReveal";
 import { getClinics, getSlotsByClinic, getSlotsByTime, bookAppointment } from "../services/publicApi";
 
-const reasons = ["General Consultation", "Follow-up Visit", "Second Opinion", "Preventive Check", "Other"];
-
 function toDateStr(d) { return d.toLocaleDateString("en-CA"); }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function norm(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
@@ -61,8 +59,6 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [reason, setReason] = useState(reasons[0]);
-  const [notes, setNotes] = useState("");
   const sheetRef = useRef(null);
 
   useEffect(() => {
@@ -72,8 +68,8 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
   }, [open]);
 
   const handleSubmit = () => {
-    onSubmit({ fullName, email, phone, reason, notes }, () => {
-      setFullName(""); setEmail(""); setPhone(""); setNotes("");
+    onSubmit({ fullName, email, phone }, () => {
+      setFullName(""); setEmail(""); setPhone("");
     });
   };
 
@@ -128,17 +124,6 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
               <input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 XXXXX XXXXX" />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Reason for Visit</label>
-            <select className="form-input" value={reason} onChange={e => setReason(e.target.value)}>
-              {reasons.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold tracking-[0.08em] uppercase text-navy/60">Additional Notes</label>
-            <textarea className="form-input" rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Describe symptoms or concerns..." />
-          </div>
-
           <button type="button" disabled={submitting} onClick={handleSubmit}
             className="w-full rounded-xl py-3.5 text-[13px] font-semibold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
             style={{ background: "linear-gradient(135deg,#0b3b52,#07192e)", boxShadow: "0 10px 26px rgba(7,25,46,0.22)" }}>
