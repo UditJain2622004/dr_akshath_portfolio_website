@@ -17,7 +17,10 @@ import {
     MoreHorizontal, 
     AlertCircle, 
     MapPin,
-    RefreshCw
+    RefreshCw,
+    Eye,
+    EyeOff,
+    Lock
 } from 'lucide-react';
 
 export const T = {
@@ -52,6 +55,9 @@ export const I = ({ n, s = 20 }) => {
         pending: AlertCircle,
         pin: MapPin,
         refresh: RefreshCw,
+        eye: Eye,
+        eyeOff: EyeOff,
+        lock: Lock,
     };
 
     const IconComponent = icons[n];

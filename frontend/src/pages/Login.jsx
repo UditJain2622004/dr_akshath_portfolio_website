@@ -6,6 +6,7 @@ export default function LoginPage() {
   const { login, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -59,24 +60,31 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: T.navy, opacity: 0.6 }}>
               Password
             </label>
-            <div className="flex items-center gap-2 rounded-xl px-3 py-3 border focus-within:border-teal-400 transition-colors"
+            <div className="flex items-center gap-2 rounded-xl pl-3 pr-2 py-2.5 border focus-within:border-teal-400 transition-colors"
               style={{ border: `1.5px solid ${T.mint}` }}>
-              <span style={{ color: T.tealLight }}><I n="pending" s={16} /></span>
+              <span className="flex-shrink-0" style={{ color: T.tealLight }}><I n="lock" s={16} /></span>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="flex-1 bg-transparent outline-none text-sm"
+                className="flex-1 min-w-0 bg-transparent outline-none text-sm"
                 style={{ color: T.navy, fontFamily: 'Outfit' }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="flex-shrink-0 p-1.5 hover:bg-black/5 rounded-lg transition-colors"
+                style={{ color: T.tealLight }}
+              >
+                <I n={showPassword ? "eyeOff" : "eye"} s={18} />
+              </button>
             </div>
           </div>
 

@@ -37,21 +37,24 @@ export default function Navbar() {
                     boxShadow: "0 4px 24px rgba(7,25,46,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
                 }}
             >
-                {["Home", "About", "Services"].map((l, i) => (
-                    <a key={l} href={`#${l === "Home" ? "" : l.toLowerCase()}`}
-                        className={`text-[14px] px-[19px] py-[8px] rounded-full transition-all no-underline font-medium ${i === 0
-                            ? "bg-white/80 text-navy font-semibold shadow-sm"
-                            : "text-navy/70 hover:text-navy hover:bg-white/30"
-                            }`}>
+                {["Home", "About", "Services"].map((l) => (
+                    <button key={l} type="button"
+                        onClick={() => scrollTo(l === "Home" ? "" : l.toLowerCase())}
+                        className="text-[14px] px-[19px] py-[8px] rounded-full transition-all no-underline font-medium text-navy/70 hover:text-navy hover:bg-white/30">
                         {l}
-                    </a>
+                    </button>
                 ))}
-                <a href="#booking"
+                <button type="button" onClick={() => scrollTo("booking")}
                     className="text-[14px] px-[19px] py-[8px] rounded-full bg-teal text-white font-medium transition-all hover:bg-teal-light no-underline shadow-sm">
                     ● Book Now
-                </a>
-                <a href="#contact" className="text-[14px] px-[19px] py-[8px] rounded-full text-navy/70 hover:text-navy hover:bg-white/30 transition-all no-underline font-medium">
+                </button>
+                <button type="button" onClick={() => scrollTo("contact")} 
+                    className="text-[14px] px-[19px] py-[8px] rounded-full text-navy/70 hover:text-navy hover:bg-white/30 transition-all no-underline font-medium">
                     Contact
+                </button>
+                <div className="w-[1px] h-4 bg-navy/10 mx-1" />
+                <a href="/admin" className="text-[12px] px-3 py-2 rounded-full text-navy/40 hover:text-navy transition-all no-underline font-semibold uppercase tracking-wider">
+                    Portal
                 </a>
             </div>
 
@@ -127,6 +130,13 @@ export default function Navbar() {
                             {item.label}
                         </button>
                     ))}
+                    <div className="h-px bg-navy/5 my-2 mx-4" />
+                    <a
+                        href="/admin"
+                        className="block w-full text-left px-4 py-3 rounded-xl text-[14px] font-semibold text-navy/80 hover:bg-white/50 transition no-underline"
+                    >
+                        Admin Portal
+                    </a>
                 </div>
             )}
 
