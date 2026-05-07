@@ -2,43 +2,94 @@ import { useReveal } from "../hooks/useReveal";
 
 const services = [
     {
-        id: "angioplasty",
+        id: "consultation",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                <path d="M8 19c0-4 8-4 8 0" />
+                <path d="M12 15v-2" />
+                <path d="M9 13h6" />
+                <path d="M5 10a7 7 0 0 1 14 0" />
             </svg>
         ),
-        title: "Coronary Angioplasty",
-        subtitle: "& Stenting",
-        desc: "Minimally invasive procedures to open blocked coronary arteries, restore blood flow, and significantly reduce risk of heart attack.",
-        tags: ["Balloon Angioplasty", "Drug-Eluting Stents"],
+        title: "Medical Consultation",
+        subtitle: "& Counseling",
+        desc: "Comprehensive evaluation, diagnosis, and personalized treatment planning with clear counseling on diet, hygiene, and disease prevention.",
+        tags: ["Patient Assessment", "Treatment Planning", "Preventive Advice"],
         accent: "#0f8c7a",
     },
     {
-        id: "heartfailure",
+        id: "emergency",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                <path d="M22 12h-4l-3 9-6-18-3 9H2" />
             </svg>
         ),
-        title: "Heart Failure",
-        subtitle: "Management",
-        desc: "Evidence-based, personalised care plans for acute and chronic heart failure — optimising medication, lifestyle modifications and monitoring.",
-        tags: ["Echocardiography", "Device Therapy"],
-        accent: "#c0392b",
+        title: "Emergency Care",
+        subtitle: "& Triage",
+        desc: "Recognition and initial management of life‑threatening emergencies, supported by BLS/ACLS training and broad inpatient exposure.",
+        tags: ["BLS", "ACLS", "Emergency Stabilization"],
+        accent: "#e8956d",
     },
     {
-        id: "preventive",
+        id: "occupational-health",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="M9 6V5a3 3 0 0 1 6 0v1" />
+                <path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+                <path d="M9 12h6" />
             </svg>
         ),
-        title: "Preventive",
-        subtitle: "Cardiology",
-        desc: "Comprehensive cardiovascular risk assessment and lifestyle intervention programmes to prevent heart disease before it starts.",
-        tags: ["Lipid Management", "Risk Stratification"],
+        title: "Occupational Health",
+        subtitle: "Assessments (OHSM)",
+        desc: "Pre‑employment and periodical medical assessments and workplace health support in line with occupational health and safety practices.",
+        tags: ["Pre‑Employment", "Periodical Exams", "Factory Act Norms"],
         accent: "#2980b9",
+    },
+    {
+        id: "executive-health",
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v4" />
+                <path d="M7 6h10" />
+                <rect x="6" y="6" width="12" height="16" rx="2" />
+                <path d="M9 12h6" />
+                <path d="M9 16h6" />
+            </svg>
+        ),
+        title: "Executive Health Check",
+        subtitle: "& Day Care Clinic",
+        desc: "Structured health check workflows and day care clinic coordination with focus on safe, efficient service delivery and patient experience.",
+        tags: ["Day Care Clinic", "Executive Checkups", "Care Coordination"],
+        accent: "#0f8c7a",
+    },
+    {
+        id: "insurance-docs",
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M8 13h8" />
+                <path d="M8 17h6" />
+            </svg>
+        ),
+        title: "Medical Documentation",
+        subtitle: "& Insurance Support",
+        desc: "Accurate clinical documentation and diagnostic forms, including support for insurance-related records and reporting requirements.",
+        tags: ["Clinical Records", "Diagnosis Forms", "Compliance Support"],
+        accent: "#8e44ad",
+    },
+    {
+        id: "aesthetic",
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4L12 2z" />
+            </svg>
+        ),
+        title: "Aesthetic Medicine",
+        subtitle: "& Cosmetology",
+        desc: "Aesthetic medicine and cosmetology care with emphasis on safety, appropriate patient selection, and informed counseling.",
+        tags: ["Aesthetic Medicine", "Cosmetology", "Patient Counseling"],
+        accent: "#d89f16",
     },
     // {
     //     id: "structural",
@@ -239,8 +290,8 @@ export default function Services() {
                     </h2>
 
                     <p className="text-[15px] font-light text-navy/55 leading-[1.8] max-w-[520px]">
-                        From advanced interventional procedures to preventive programmes —
-                        every service is designed around your long-term cardiac health.
+                        From consultation and emergency care to occupational health assessments and preventive guidance —
+                        every service is delivered with a patient‑first approach.
                     </p>
                 </div>
 

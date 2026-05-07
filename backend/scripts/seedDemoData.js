@@ -37,104 +37,82 @@ function daysFromToday(n) {
 // ── 1. Clinics ─────────────────────────────────────────────────────────────────
 const CLINICS = [
   {
-    id: 'clinic_fortis',
-    name: 'Fortis — Koramangala',
-    address: '154/9, Hosur Main Rd, Koramangala, Bengaluru 560095',
+    id: 'clinic_kmc',
+    name: 'KMC Hospital — Mangalore',
+    address: 'KMC Hospital, Mangalore, Karnataka (per CV)',
     isActive: true,
     displayOrder: 1,
-    contact: '+91 80 6621 4444',
+    contact: '+91 95381 07758',
     weeklySchedule: {
-      Mon: { open: '09:00', close: '13:00' },
-      Tue: { open: '09:00', close: '13:00' },
-      Thu: { open: '09:00', close: '13:00' },
-      Fri: { open: '09:00', close: '13:00' },
+      1: { startTime: '09:00', endTime: '13:00', slotDuration: 15 },
+      2: { startTime: '09:00', endTime: '13:00', slotDuration: 15 },
+      4: { startTime: '09:00', endTime: '13:00', slotDuration: 15 },
+      5: { startTime: '09:00', endTime: '13:00', slotDuration: 15 },
     },
     breakTimes: [{ start: '11:30', end: '12:00' }],
-    slotDuration: 15,
   },
   {
-    id: 'clinic_apollo',
-    name: 'Apollo — Indiranagar',
-    address: '1A, Indiranagar 100ft Rd, Bengaluru 560038',
+    id: 'clinic_nitk',
+    name: 'NIT Karnataka — Health Care Center',
+    address: 'NITK Campus, Surathkal, Mangalore, Karnataka',
     isActive: true,
     displayOrder: 2,
-    contact: '+91 80 4848 8484',
+    contact: '+91 95381 07758',
     weeklySchedule: {
-      Mon: { open: '17:00', close: '20:00' },
-      Wed: { open: '17:00', close: '20:00' },
-      Fri: { open: '15:00', close: '18:00' },
-      Sat: { open: '10:00', close: '13:00' },
+      1: { startTime: '18:00', endTime: '21:00', slotDuration: 20 },
+      3: { startTime: '18:00', endTime: '21:00', slotDuration: 20 },
+      5: { startTime: '18:00', endTime: '21:00', slotDuration: 20 },
     },
     breakTimes: [],
-    slotDuration: 20,
-  },
-  {
-    id: 'clinic_manipal',
-    name: 'Manipal — Whitefield',
-    address: 'ITPL Rd, Whitefield, Bengaluru 560066',
-    isActive: true,
-    displayOrder: 3,
-    contact: '+91 80 2502 4444',
-    weeklySchedule: {
-      Tue: { open: '14:00', close: '18:00' },
-      Sat: { open: '09:00', close: '13:00' },
-    },
-    breakTimes: [],
-    slotDuration: 15,
   },
 ];
 
 // ── 2. Patients ────────────────────────────────────────────────────────────────
+/** Synthetic demo patients for local/staging admin testing only — not real individuals. */
 const PATIENTS = [
-  { phone: '+919876543210', name: 'Meena Iyer', email: 'meena.iyer@gmail.com' },
-  { phone: '+919845123456', name: 'Suresh Patel', email: 'suresh.patel@gmail.com' },
-  { phone: '+919812345678', name: 'Divya Krishnan', email: 'divya.k@outlook.com' },
-  { phone: '+919900112233', name: 'Karthik Rao', email: null },
-  { phone: '+919988776655', name: 'Lakshmi Devi', email: 'lakshmi@yahoo.com' },
-  { phone: '+919765432100', name: 'Arjun Menon', email: 'arjun.menon@gmail.com' },
-  { phone: '+919654321098', name: 'Seetha Raman', email: null },
-  { phone: '+919543210987', name: 'Vijay Kumar', email: 'vijay.k@gmail.com' },
-  { phone: '+919432109876', name: 'Rahul Sharma', email: 'rahul.sharma@gmail.com' },
-  { phone: '+919321098765', name: 'Priya Nair', email: 'priya.nair@gmail.com' },
-  { phone: '+919210987654', name: 'Arun Kumar', email: null },
-  { phone: '+919109876543', name: 'Ananya Reddy', email: 'ananya.r@gmail.com' },
+  { phone: '+919800000001', name: 'Demo Patient A', email: null },
+  { phone: '+919800000002', name: 'Demo Patient B', email: null },
+  { phone: '+919800000003', name: 'Demo Patient C', email: null },
+  { phone: '+919800000004', name: 'Demo Patient D', email: null },
+  { phone: '+919800000005', name: 'Demo Patient E', email: null },
+  { phone: '+919800000006', name: 'Demo Patient F', email: null },
+  { phone: '+919800000007', name: 'Demo Patient G', email: null },
+  { phone: '+919800000008', name: 'Demo Patient H', email: null },
+  { phone: '+919800000009', name: 'Demo Patient I', email: null },
+  { phone: '+919800000010', name: 'Demo Patient J', email: null },
+  { phone: '+919800000011', name: 'Demo Patient K', email: null },
+  { phone: '+919800000012', name: 'Demo Patient L', email: null },
 ];
 
 // ── 3. Appointments ────────────────────────────────────────────────────────────
 // today = 0, yesterday = -1, tomorrow = +1
 const APPOINTMENTS = [
-  // ── Today ─ Fortis ──────────────────────────────────────────────
-  { clinicId: 'clinic_fortis', date: 0, time: '09:00', patient: 0, status: 'completed', type: 'new' },
-  { clinicId: 'clinic_fortis', date: 0, time: '09:15', patient: 1, status: 'completed', type: 'followup' },
-  { clinicId: 'clinic_fortis', date: 0, time: '09:30', patient: 2, status: 'confirmed', type: 'new' },
-  { clinicId: 'clinic_fortis', date: 0, time: '10:00', patient: 3, status: 'confirmed', type: 'followup' },
-  { clinicId: 'clinic_fortis', date: 0, time: '10:15', patient: 4, status: 'pending', type: 'new' },
-  { clinicId: 'clinic_fortis', date: 0, time: '11:00', patient: 5, status: 'cancelled', type: 'new' },
+  { clinicId: 'clinic_kmc', date: 0, time: '09:00', patient: 0, status: 'completed', type: 'new' },
+  { clinicId: 'clinic_kmc', date: 0, time: '09:15', patient: 1, status: 'completed', type: 'followup' },
+  { clinicId: 'clinic_kmc', date: 0, time: '09:30', patient: 2, status: 'confirmed', type: 'new' },
+  { clinicId: 'clinic_kmc', date: 0, time: '10:00', patient: 3, status: 'confirmed', type: 'followup' },
+  { clinicId: 'clinic_kmc', date: 0, time: '10:15', patient: 4, status: 'pending', type: 'new' },
+  { clinicId: 'clinic_kmc', date: 0, time: '11:00', patient: 5, status: 'cancelled', type: 'new' },
 
-  // ── Today ─ Apollo ───────────────────────────────────────────────
-  { clinicId: 'clinic_apollo', date: 0, time: '17:00', patient: 6, status: 'confirmed', type: 'new' },
-  { clinicId: 'clinic_apollo', date: 0, time: '17:20', patient: 7, status: 'pending', type: 'followup' },
-  { clinicId: 'clinic_apollo', date: 0, time: '17:40', patient: 8, status: 'pending', type: 'new' },
+  { clinicId: 'clinic_nitk', date: 0, time: '18:00', patient: 6, status: 'confirmed', type: 'new' },
+  { clinicId: 'clinic_nitk', date: 0, time: '18:20', patient: 7, status: 'pending', type: 'followup' },
+  { clinicId: 'clinic_nitk', date: 0, time: '18:40', patient: 8, status: 'pending', type: 'new' },
 
-  // ── Tomorrow ─ Fortis ────────────────────────────────────────────
-  { clinicId: 'clinic_fortis', date: 1, time: '09:00', patient: 9, status: 'confirmed', type: 'new' },
-  { clinicId: 'clinic_fortis', date: 1, time: '09:15', patient: 10, status: 'pending', type: 'new' },
-  { clinicId: 'clinic_fortis', date: 1, time: '09:30', patient: 11, status: 'pending', type: 'followup' },
+  { clinicId: 'clinic_kmc', date: 1, time: '09:00', patient: 9, status: 'confirmed', type: 'new' },
+  { clinicId: 'clinic_kmc', date: 1, time: '09:15', patient: 10, status: 'pending', type: 'new' },
+  { clinicId: 'clinic_kmc', date: 1, time: '09:30', patient: 11, status: 'pending', type: 'followup' },
 
-  // ── Tomorrow ─ Manipal ───────────────────────────────────────────
-  { clinicId: 'clinic_manipal', date: 1, time: '14:00', patient: 0, status: 'confirmed', type: 'followup' },
-  { clinicId: 'clinic_manipal', date: 1, time: '14:15', patient: 2, status: 'pending', type: 'new' },
+  { clinicId: 'clinic_nitk', date: 1, time: '18:00', patient: 0, status: 'confirmed', type: 'followup' },
+  { clinicId: 'clinic_nitk', date: 1, time: '18:20', patient: 2, status: 'pending', type: 'new' },
 
-  // ── Day After ─ Apollo ───────────────────────────────────────────
-  { clinicId: 'clinic_apollo', date: 2, time: '17:00', patient: 3, status: 'pending', type: 'new' },
-  { clinicId: 'clinic_apollo', date: 2, time: '17:20', patient: 4, status: 'confirmed', type: 'new' },
+  { clinicId: 'clinic_nitk', date: 2, time: '18:00', patient: 3, status: 'pending', type: 'new' },
+  { clinicId: 'clinic_nitk', date: 2, time: '18:20', patient: 4, status: 'confirmed', type: 'new' },
 
-  // ── Yesterday (history) ─ Fortis ────────────────────────────────
-  { clinicId: 'clinic_fortis', date: -1, time: '09:00', patient: 5, status: 'completed', type: 'followup' },
-  { clinicId: 'clinic_fortis', date: -1, time: '09:15', patient: 6, status: 'completed', type: 'new' },
-  { clinicId: 'clinic_fortis', date: -1, time: '09:30', patient: 7, status: 'cancelled', type: 'new' },
-  { clinicId: 'clinic_apollo', date: -1, time: '17:00', patient: 8, status: 'completed', type: 'followup' },
-  { clinicId: 'clinic_apollo', date: -1, time: '17:20', patient: 9, status: 'completed', type: 'new' },
+  { clinicId: 'clinic_kmc', date: -1, time: '09:00', patient: 5, status: 'completed', type: 'followup' },
+  { clinicId: 'clinic_kmc', date: -1, time: '09:15', patient: 6, status: 'completed', type: 'new' },
+  { clinicId: 'clinic_kmc', date: -1, time: '09:30', patient: 7, status: 'cancelled', type: 'new' },
+  { clinicId: 'clinic_nitk', date: -1, time: '18:00', patient: 8, status: 'completed', type: 'followup' },
+  { clinicId: 'clinic_nitk', date: -1, time: '18:20', patient: 9, status: 'completed', type: 'new' },
 ];
 
 // ── Admin user ─────────────────────────────────────────────────────────────────
