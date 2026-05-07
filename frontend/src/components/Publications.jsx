@@ -12,8 +12,8 @@ const publications = [
         href: "https://europepmc.org/article/med/36530803",
     },
     {
-        title: "Researcher profile publication page",
-        source: "Researcher",
+        title: "Improvement in care and maintenance of Port-A-Cath (Researcher profile)",
+        source: "Manipal Researcher",
         href: "https://researcher.manipal.edu/en/publications/improvement-in-care-and-maintenance-of-port-a-cath-following-the-",
     },
 ];
@@ -82,6 +82,8 @@ export default function Publications() {
                         </a>
                     ))}
                 </div>
+
+
             </div>
         </section>
     );

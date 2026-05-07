@@ -40,7 +40,7 @@ function Badge({ icon, value, sub, style }) {
             </div>
             <div>
                 <div className="text-[15px] font-bold text-navy leading-none">{value}</div>
-                <div className="text-[10px] text-navy/50 font-medium mt-0.5">{sub}</div>
+                {sub ? <div className="text-[10px] text-navy/50 font-medium mt-0.5">{sub}</div> : null}
             </div>
         </div>
     );
@@ -170,8 +170,8 @@ export default function Hero() {
                         />
                         <Badge
                             icon={<HeartRateIcon />}
-                            value="1.4K"
-                            sub="Surgeries"
+                            value="VIJAY POLYCLINIC"
+                            sub="Doctor"
                             style={{ top: 20, right: -30, scale: "0.85", transformOrigin: "top right" }}
                         />
                     </div> */}
@@ -274,7 +274,7 @@ export default function Hero() {
             </div>
 
             {/* Desktop / large layout */}
-            <div className="relative z-10 hidden lg:flex w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[80px] pt-28 sm:pt-32 lg:pt-[150px] pb-14 sm:pb-20 lg:pb-[110px] items-center justify-between gap-12 lg:gap-20">
+            <div className="relative z-10 hidden lg:flex w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[80px] pt-28 sm:pt-32 lg:pt-[150px] pb-14 sm:pb-20 lg:pb-[80px] items-center justify-between gap-12 lg:gap-20">
 
                 {/* ── LEFT: Text content ── */}
                 <div className="max-w-[640px] w-full flex-shrink-0">
@@ -325,8 +325,8 @@ export default function Hero() {
                     </div>
 
                     <p className="anim-up-5 text-[16.5px] font-light text-navy leading-[1.78] max-w-[520px] mb-10">
-                        An enthusiastic and high-energy <strong className="font-bold text-navy">MBBS doctor</strong> with 13+
-                        years of experience in medical consultation, counseling, treatment, and clinical practice — with a focus on
+                        An enthusiastic and high energy <strong className="font-bold text-navy">MBBS doctor</strong> with 13+
+                        years of experience in medical consultation, counseling, treatment, and clinical practice  with a focus on
                         cardiac critical care, ECHO, and ECMO.
                     </p>
 
@@ -433,8 +433,8 @@ export default function Hero() {
                                 <CrossIcon />
                             </div>
                             <div>
-                                <div className="text-[11px] font-bold text-navy leading-none">KMC Hospital</div>
-                                <div className="text-[9px] text-navy/50 mt-0.5">Resident Doctor</div>
+                                <div className="text-[11px] font-bold text-navy leading-none">ISHAANVI POLYCLINIC</div>
+                                <div className="text-[9px] text-navy/50 mt-0.5">Doctor</div>
                             </div>
                         </div>
                     </div>
@@ -453,11 +453,31 @@ export default function Hero() {
                     <div className="hidden lg:block">
                         <Badge
                             icon={<HeartRateIcon />}
-                            value="1.4K"
-                            sub="Surgeries Done"
+                            value="VIJAY POLYCLINIC"
+                            sub="Doctor"
                             style={{ top: 110, right: -70 }}
                         />
+                         <div
+                            className="absolute top-4 left-4 flex items-center gap-2 rounded-xl px-3 py-2 backdrop-blur-md"
+                            style={{
+                                background: "rgba(255,255,255,0.88)",
+                                border: "1px solid rgba(15,140,122,0.15)",
+                                boxShadow: "0 4px 16px rgba(7,25,46,0.1)",
+                            }}
+                        >
+                            <div
+                                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                style={{ background: "rgba(15,140,122,0.12)" }}
+                            >
+                                <CrossIcon />
+                            </div>
+                            <div>
+                                <div className="text-[11px] font-bold text-navy leading-none">ISHAANVI POLYCLINIC</div>
+                                <div className="text-[9px] text-navy/50 mt-0.5">Doctor</div>
+                            </div>
+                        </div>
                     </div>
+                    
 
                     {/* Decorative corner dots */}
                     <div

@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import About from "../components/About";
 import Services from "../components/Services";
+import Clinics from "../components/Clinics";
 import Booking from "../components/Booking";
 import Publications from "../components/Publications";
 import Testimonials from "../components/Testimonials";
@@ -31,9 +32,10 @@ export default function Home() {
       <Hero />
       <About />
       <Services />
+      <Clinics />
       <Booking />
       <Publications />
-      <Testimonials />
+      {/* <Testimonials /> */}
       <Footer />
     </div>
   );

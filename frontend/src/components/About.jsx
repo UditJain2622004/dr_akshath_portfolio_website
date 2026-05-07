@@ -3,8 +3,9 @@ import { useReveal } from "../hooks/useReveal";
 const specializations = [
     { icon: "🫀", label: "Cardiac Critical Care" },
     { icon: "📈", label: "Echocardiography (ECHO)" },
-    { icon: "🫁", label: "ECMO Support" },
-    // { icon: "📋", label: "Clinical Research" },
+    // { icon: "🫁", label: "ECMO Support" },
+    { icon: "🏭", label: "Occupational Medicine (OHSM)" },
+    // { icon: "✨", label: "Aesthetic Medicine & Cosmetology" },
 ];
 
 const credentials = [
@@ -157,14 +158,14 @@ export default function About() {
                         }}
                     >
                         <img
-                            src="/dr.akshath.jpeg"
+                            src="/dr.akshath2.jpg"
                             alt="Dr. Akshath Ramesh Acharya"
                             className="w-full h-full object-cover"
                             onError={(e) => { e.target.style.display = "none"; }}
                         />
 
                         {/* Experience badge — bottom left */}
-                        <div
+                        {/* <div
                             className="absolute bottom-5 left-5 flex items-center gap-3 rounded-xl px-4 py-3"
                             style={{
                                 background: "rgba(255,255,255,0.94)",
@@ -186,7 +187,7 @@ export default function About() {
                                 <div className="text-[15px] font-bold text-navy leading-none">98%</div>
                                 <div className="text-[10px] text-navy/50 font-medium mt-0.5">Success Rate</div>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Floating badge — top right corner of image */}
@@ -203,7 +204,7 @@ export default function About() {
                             borderRadius: "20px",
                         }}
                     >
-                        <span className="text-[28px] font-bold text-white leading-none">14</span>
+                        <span className="text-[28px] font-bold text-white leading-none">13+</span>
                         <span className="text-teal-light text-[11px] font-semibold mt-0.5 tracking-wide">Years</span>
                         <span className="text-white/40 text-[9px] tracking-wider uppercase">of Care</span>
                     </div>
@@ -234,15 +235,15 @@ export default function About() {
                     </h2>
 
                     {/* Bio */}
-                    <p className="reveal reveal-d2 text-[15px] font-light text-[#4a6275] leading-[1.85] mb-7" style={{ maxWidth: 500 }}>
-                        A certified <strong className="font-semibold text-navy">MBBS doctor</strong> with over{" "}
-                        <strong className="font-semibold text-navy">13 years</strong> of experience in medical consultation,
-                        counseling, and treatment. Experienced in cardiac critical care with training in ECHO and ECMO, with strong
-                        exposure across emergency and inpatient care.
+                    <p className="reveal reveal-d2 text-[15px] font-light text-[#4a6275] leading-[1.85] mb-5" style={{ maxWidth: 500 }}>
+                        A certified and qualified <strong className="font-semibold text-navy">MBBS doctor</strong> with{" "}
+                        <strong className="font-semibold text-navy">13+ years</strong> of experience in medical consultation, counseling, and treatment.
+                        Trained in cardiac critical care (ECHO/ECMO), emergency medical services, occupational medicine (pre-employment and periodical assessments),
+                        and aesthetic medicine & cosmetology, with hands-on experience in patient assessment, documentation, and insurance-related records.
                     </p>
 
                     {/* Specialization chips */}
-                    <div className="reveal reveal-d2 flex flex-wrap gap-2.5 mb-8">
+                    <div className="reveal reveal-d2 flex flex-wrap gap-2.5 mb-6">
                         {specializations.map(({ icon, label }) => (
                             <span
                                 key={label}
@@ -288,9 +289,9 @@ export default function About() {
                     {/* Stats row */}
                     <div className="reveal reveal-d2 grid grid-cols-3 gap-4 mb-9">
                         {[
-                            { val: "1.4K+", label: "Surgeries" },
-                            { val: "35+", label: "Publications" },
-                            { val: "12", label: "Awards" },
+                            { val: "13+", label: "Years Experience" },
+                            { val: "BLS/ACLS", label: "Certified Provider" },
+                            { val: "2012–2025", label: "KMC Hospital" },
                         ].map(({ val, label }) => (
                             <div
                                 key={label}
@@ -300,7 +301,7 @@ export default function About() {
                                     border: "1px solid rgba(7,25,46,0.07)",
                                 }}
                             >
-                                <div className="font-display text-[26px] font-bold text-navy leading-none">{val}</div>
+                                <div className="font-display text-[18px] font-bold text-navy leading-none">{val}</div>
                                 <div className="text-[11px] text-navy/45 font-medium mt-1 tracking-wide">{label}</div>
                             </div>
                         ))}
@@ -309,7 +310,7 @@ export default function About() {
                     {/* CTA */}
                     <div className="reveal reveal-d3 flex items-center gap-4 flex-wrap">
                         <button
-                            className="font-sans text-[13.5px] font-semibold text-white cursor-pointer tracking-wide transition-all hover:bg-teal-light hover:-translate-y-0.5"
+                            className="w-full sm:w-auto font-sans text-[13.5px] font-semibold text-white cursor-pointer tracking-wide transition-all hover:bg-teal-light hover:-translate-y-0.5"
                             style={{
                                 background: "#0f8c7a",
                                 border: "none",
