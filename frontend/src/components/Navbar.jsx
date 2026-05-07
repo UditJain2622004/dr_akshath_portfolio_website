@@ -106,7 +106,7 @@ export default function Navbar() {
                     role="dialog"
                     aria-label="Navigation"
                     style={{
-                        background: "rgba(255,255,255,0.75)",
+                        background: "rgba(255,255,255,0.80)",
                         backdropFilter: "blur(20px) saturate(180%)",
                         WebkitBackdropFilter: "blur(20px) saturate(180%)",
                         border: "1px solid rgba(255,255,255,0.5)",

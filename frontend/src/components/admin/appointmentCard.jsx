@@ -47,8 +47,10 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
       icon: "x"
     };
     if (confirming === 'delay') return {
-      title: "Mark as Delayed?",
-      message: `This will flag the appointment as delayed. Send notification to patient?`,
+      title: "Still in development",
+      message: `This feature is not built yet.`,
+      // title: "Mark as Delayed?",
+      // message: `This will flag the appointment as delayed. Send notification to patient?`,
       confirmText: "Yes, Delay",
       confirmColor: "#d97706",
       icon: "delay"

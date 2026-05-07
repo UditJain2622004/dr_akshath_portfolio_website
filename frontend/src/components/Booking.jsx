@@ -143,7 +143,6 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
 export default function Booking() {
   const ref = useReveal();
   const [mode, setMode] = useState("clinic");
-  const [step, setStep] = useState(2);
   const [clinicCollapsed, setClinicCollapsed] = useState(false);
   const [timeCollapsed, setTimeCollapsed] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
@@ -169,7 +168,6 @@ export default function Booking() {
     getClinics().then(r => {
       const cl = r.clinics || [];
       setClinics(cl);
-      if (cl.length > 0) setSelectedClinic(cl[0].id);
     }).catch(console.error);
   }, []);
 
@@ -250,8 +248,6 @@ export default function Booking() {
   const hasSlotSelection = mode === "clinic" ? !!selectedTime : (!!timeInput && !!selectedClinic);
   const isQuickDate = quickDays.some(d => norm(d).getTime() === selectedDate.getTime());
 
-  const goStep = (n) => setStep(n);
-
   const handleDatePick = (d) => {
     setSelectedDate(norm(d));
     setShowCalendar(false);
@@ -261,7 +257,7 @@ export default function Booking() {
       setClinicCollapsed(false);
     }
     setTimeCollapsed(false);
-    if (step < 2) goStep(2);
+    setSelectedTime("");
   };
 
   return (
@@ -287,10 +283,26 @@ export default function Booking() {
         {/* Mode toggle */}
         <div className="reveal max-w-md mx-auto mb-8">
           <div className="booking-mode-toggle">
-            <button className={mode === "clinic" ? "active" : ""} onClick={() => { setMode("clinic"); setSelectedTime(""); setStep(2); setClinicCollapsed(false); setTimeCollapsed(false); }}>
+            <button className={mode === "clinic" ? "active" : ""} onClick={() => {
+              setMode("clinic");
+              setSelectedClinic(null);
+              setSelectedTime("");
+              setTimeInput("");
+              setClinicResults([]);
+              setClinicCollapsed(false);
+              setTimeCollapsed(false);
+            }}>
               Choose Clinic First
             </button>
-            <button className={mode === "time" ? "active" : ""} onClick={() => { setMode("time"); setSelectedClinic(null); setSelectedTime(""); setTimeInput(""); setStep(2); setClinicCollapsed(false); setTimeCollapsed(false); }}>
+            <button className={mode === "time" ? "active" : ""} onClick={() => {
+              setMode("time");
+              setSelectedClinic(null);
+              setSelectedTime("");
+              setTimeInput("");
+              setClinicResults([]);
+              setClinicCollapsed(false);
+              setTimeCollapsed(false);
+            }}>
               Choose Time First
             </button>
           </div>
@@ -335,7 +347,7 @@ export default function Booking() {
           
 
           {/* ═══ STEP 2 — Clinic or Time (depends on mode) ═══ */}
-          {step >= 2 && (mode === "clinic" ? (
+          {mode === "clinic" ? (
             clinicCollapsed ? (
               <StepSummary label="Clinic" value={selectedClinicObj?.name || "—"} onEdit={() => { setClinicCollapsed(false); setTimeCollapsed(false); }} />
             ) : (
@@ -345,7 +357,13 @@ export default function Booking() {
                   {clinics.map(c => (
                     <button key={c.id} type="button"
                       className={`clinic-card text-left ${selectedClinic === c.id ? "selected" : ""} ${!c.weeklySchedule ? "unavailable" : ""}`}
-                      onClick={() => { if (c.weeklySchedule) { setSelectedClinic(c.id); setClinicCollapsed(true); goStep(3); } }}>
+                      onClick={() => {
+                        if (!c.weeklySchedule) return;
+                        setSelectedClinic(c.id);
+                        setSelectedTime("");
+                        setClinicCollapsed(true);
+                        setTimeCollapsed(false);
+                      }}>
                       <div className="text-[13px] font-semibold text-navy">{c.name}</div>
                       <div className="text-[11px] text-navy/45 mt-1 leading-snug">{c.address}</div>
                       {c.specialty && <div className="text-[10px] mt-1.5 font-semibold" style={{ color: "#0f8c7a" }}>{c.specialty}</div>}
@@ -358,15 +376,15 @@ export default function Booking() {
           ) : (
             <div className="bg-white rounded-2xl border border-navy/10 shadow-[0_18px_55px_rgba(7,25,46,0.08)] p-5 sm:p-7">
               <span className="text-[15px] font-semibold text-navy block mb-4">2. Pick a Time</span>
-              <select className="form-input" value={timeInput} onChange={e => { setTimeInput(e.target.value); setSelectedClinic(null); setClinicCollapsed(false); if (e.target.value) goStep(3); }}>
+              <select className="form-input" value={timeInput} onChange={e => { setTimeInput(e.target.value); setSelectedClinic(null); setClinicCollapsed(false); }}>
                 <option value="">Select a time…</option>
                 {timeOptions.map(t => <option key={t} value={t}>{formatTime12(t)}</option>)}
               </select>
             </div>
-          ))}
+          )}
 
           {/* ═══ STEP 3 — Slots (clinic mode) or Clinic results (time mode) ═══ */}
-          {step >= 3 && (mode === "clinic" ? (
+          {mode === "clinic" && selectedClinic ? (
             timeCollapsed && selectedTime ? (
               <StepSummary label="Time" value={formatTime12(selectedTime)} onEdit={() => setTimeCollapsed(false)} />
             ) : (
@@ -418,7 +436,7 @@ export default function Booking() {
                 )}
               </div>
             )
-          ) : timeInput ? (
+          ) : mode === "time" && timeInput ? (
             clinicCollapsed && selectedClinic ? (
               <StepSummary label="Clinic" value={clinicResults.find(c => c.clinicId === selectedClinic)?.clinicName || "—"} onEdit={() => setClinicCollapsed(false)} />
             ) : (
@@ -454,7 +472,7 @@ export default function Booking() {
                 )}
               </div>
             )
-          ) : null)}
+          ) : null}
 
           {/* ═══ Sticky CTA ═══ */}
           {hasSlotSelection && (
