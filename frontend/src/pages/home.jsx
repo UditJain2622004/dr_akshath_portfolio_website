@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import About from "../components/About";
+import Experience from "../components/Experience";
 import Services from "../components/Services";
 import Clinics from "../components/Clinics";
 import Booking from "../components/Booking";
@@ -31,6 +32,7 @@ export default function Home() {
       <Navbar />
       <Hero />
       <About />
+      <Experience />
       <Services />
       <Clinics />
       <Booking />

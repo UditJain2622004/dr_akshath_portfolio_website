@@ -2,16 +2,47 @@ import { useReveal } from "../hooks/useReveal";
 
 const specializations = [
     { icon: "🫀", label: "Cardiac Critical Care" },
-    { icon: "📈", label: "Echocardiography (ECHO)" },
-    // { icon: "🫁", label: "ECMO Support" },
-    { icon: "🏭", label: "Occupational Medicine (OHSM)" },
-    // { icon: "✨", label: "Aesthetic Medicine & Cosmetology" },
+    { icon: "📈", label: "Echocardiography" },
+    { icon: "🫁", label: "ECMO" },
+    { icon: "💊", label: "Cardio Diabetes" },
+    { icon: "🥗", label: "Cardiac Nutrition" },
+    { icon: "🔊", label: "Lung Ultrasound" },
+    { icon: "🏥", label: "Palliative Care" },
+    { icon: "🏭", label: "Occupational Medicine" },
+    { icon: "✨", label: "Aesthetic Medicine" },
 ];
 
-const credentials = [
-    { year: "2011", title: "MBBS", place: "A.J. Institute of Medical Sciences, Mangalore" },
-    { year: "2012–2025", title: "Resident Doctor", place: "KMC Hospital, Mangalore" },
-    { year: "2014–Present", title: "Medical Officer (Evening)", place: "Health Care Center, NITK Karnataka" },
+const education = [
+    {
+        title: "MBBS",
+        place: "A.J. Institute of Medical Sciences, Mangalore",
+        sub: "Rajiv Gandhi University of Health Sciences",
+    },
+    {
+        title: "FAM — Fellowship in Aesthetic Medicine",
+        place: "ILAMED India",
+        sub: "Affiliated to Greifswald University, Germany",
+    },
+    {
+        title: "APGD (OHSM) — Occupational Health & Safety Management",
+        place: "James Lind Institute, Switzerland",
+        sub: "Advanced Post Graduate Diploma",
+    },
+    {
+        title: "FICCC · FICD · FECHO · FECMO · FICN + CC Lung Ultrasound",
+        place: "TSS (The Simulation Society)",
+        sub: "Conducted at AIIMS New Delhi",
+    },
+    {
+        title: "FCEPC — Fellowship in Palliative Care",
+        place: "IAPC",
+        sub: null,
+    },
+];
+
+const pursuing = [
+    { label: "MRCP (UK)", desc: "Member of the Royal Colleges of Physicians" },
+    { label: "MBA in Healthcare Management", desc: "MAHE" },
 ];
 
 /* Light ECG wave illustration */
@@ -263,48 +294,48 @@ export default function About() {
                     {/* Divider */}
                     <div className="reveal reveal-d2 w-full h-px mb-8" style={{ background: "rgba(7,25,46,0.08)" }} />
 
-                    {/* Credentials timeline */}
-                    <div className="reveal reveal-d2 flex flex-col gap-4 mb-9">
-                        {credentials.map(({ year, title, place }) => (
-                            <div key={title} className="flex items-start gap-4">
-                                {/* Year pill */}
-                                <div
-                                    className="flex-shrink-0 text-[11px] font-bold rounded-md px-2.5 py-1.5 leading-none"
-                                    style={{
-                                        background: "rgba(15,140,122,0.1)",
-                                        color: "#0f8c7a",
-                                        minWidth: 44,
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    {year}
+                    {/* Education & Fellowships */}
+                    <div className="reveal reveal-d2 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f8c7a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                                <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
+                            </svg>
+                            <span className="text-[12px] font-semibold text-navy tracking-wide uppercase">Education & Fellowships</span>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            {education.map(({ title, place, sub }) => (
+                                <div key={title} className="flex items-start gap-3">
+                                    <div
+                                        className="w-2 h-2 rounded-full mt-[7px] flex-shrink-0"
+                                        style={{ background: "#0f8c7a" }}
+                                    />
+                                    <div className="min-w-0">
+                                        <div className="text-[13px] font-semibold text-navy leading-tight">{title}</div>
+                                        <div className="text-[11.5px] text-navy/50 mt-0.5">{place}</div>
+                                        {sub && <div className="text-[10.5px] text-navy/35 italic mt-0.5">{sub}</div>}
+                                    </div>
                                 </div>
-                                <div>
-                                    <div className="text-[13.5px] font-semibold text-navy leading-tight">{title}</div>
-                                    <div className="text-[12px] text-navy/45 mt-0.5">{place}</div>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Stats row */}
-                    <div className="reveal reveal-d2 grid grid-cols-3 gap-4 mb-9">
-                        {[
-                            { val: "13+", label: "Years Experience" },
-                            { val: "BLS/ACLS", label: "Certified Provider" },
-                            { val: "2012–2025", label: "KMC Hospital" },
-                        ].map(({ val, label }) => (
-                            <div
+                    {/* Currently Pursuing */}
+                    <div className="reveal reveal-d2 flex flex-wrap gap-2.5 mb-9">
+                        {pursuing.map(({ label, desc }) => (
+                            <span
                                 key={label}
-                                className="rounded-xl px-4 py-4 text-center transition-all hover:-translate-y-1"
+                                className="inline-flex items-center gap-2 rounded-full text-[11.5px] font-semibold px-4 py-2 transition-all hover:-translate-y-0.5"
                                 style={{
-                                    background: "rgba(7,25,46,0.03)",
-                                    border: "1px solid rgba(7,25,46,0.07)",
+                                    background: "rgba(7,25,46,0.04)",
+                                    border: "1px dashed rgba(7,25,46,0.18)",
+                                    color: "#07192e",
                                 }}
                             >
-                                <div className="font-display text-[18px] font-bold text-navy leading-none">{val}</div>
-                                <div className="text-[11px] text-navy/45 font-medium mt-1 tracking-wide">{label}</div>
-                            </div>
+                                <span style={{ color: "#d89f16" }}>🎓</span>
+                                {label}
+                                <span className="text-[10px] font-normal text-navy/40">({desc})</span>
+                            </span>
                         ))}
                     </div>
 

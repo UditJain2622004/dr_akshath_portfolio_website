@@ -226,12 +226,12 @@ function ServiceCard({ service, index }) {
             </div>
 
             {/* Learn more */}
-            <div className="flex items-center gap-1.5 mt-1 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1">
+            {/* <div className="flex items-center gap-1.5 mt-1 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1">
                 <span className="text-[12px] font-semibold" style={{ color: accent }}>Learn more</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round">
                     <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-            </div>
+            </div> */}
         </div>
     );
 }

@@ -37,7 +37,7 @@ export default function Navbar() {
                     boxShadow: "0 4px 24px rgba(7,25,46,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
                 }}
             >
-                {["Home", "About", "Services", "Clinics"].map((l) => (
+                {["Home", "About", "Experience", "Services", "Clinics"].map((l) => (
                     <button key={l} type="button"
                         onClick={() => scrollTo(l === "Home" ? "" : l.toLowerCase())}
                         className="text-[14px] px-[19px] py-[8px] rounded-full transition-all no-underline font-medium text-navy/70 hover:text-navy hover:bg-white/30">
@@ -116,6 +116,7 @@ export default function Navbar() {
                     {[
                         { label: "Home", id: "" },
                         { label: "About", id: "about" },
+                        { label: "Experience", id: "experience" },
                         { label: "Services", id: "services" },
                         { label: "Clinics", id: "clinics" },
                         { label: "Book Now", id: "booking" },
