@@ -22,7 +22,7 @@ export default function Navbar() {
                 </div>
                 <div className="flex flex-col">
                     <strong className="text-[15.5px] font-semibold text-navy tracking-tight">Dr. Akshath Ramesh Acharya</strong>
-                    <span className="text-[11px] text-navy/50 tracking-[0.12em] uppercase">MBBS · Cardiac Critical Care</span>
+                    {/* <span className="text-[11px] text-navy/50 tracking-[0.12em] uppercase">MBBS · Cardiac Critical Care</span> */}
                 </div>
             </button>
 

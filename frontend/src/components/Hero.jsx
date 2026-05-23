@@ -25,6 +25,8 @@ const specs = [
     },
 ];
 
+const degrees = ["MBBS", "FAM", "APGD(OHSM)", "FICCC", "FICD", "FECHO", "FECMO", "FICN"]
+
 /* Small floating badge */
 function Badge({ icon, value, sub, style }) {
     return (
@@ -246,9 +248,15 @@ export default function Hero() {
                     <div className="mt-3 font-display text-[24px] leading-[1.08] text-navy font-bold">
                         DR. AKSHATH RAMESH ACHARYA
                     </div>
+
+                    {/* show in 2 lines  */}
                     <div className="mt-2 text-[11px] text-navy/55">
-                        {["MBBS", "FICCC", "FECHO", "FECMO"].join(" · ")}
+                        {degrees.slice(0, 3).join(" · ")}
                     </div>
+                    <div className="mt-1 text-[11px] text-navy/55">
+                        {degrees.slice(3).join(" · ")}
+                    </div>
+
                     <p className="mt-4 text-[13px] leading-[1.7] text-navy/60 font-light max-w-[520px] mx-auto">
                         Dedicated clinician passionate about heart health and specialized care. Committed to prevention, diagnosis,
                         and evidence-based management for better outcomes.
@@ -309,14 +317,14 @@ export default function Hero() {
                     </h1>
 
                     <div className="anim-up-4 inline-flex items-center gap-2.5 my-5">
-                        {["MBBS", "FICCC", "FECHO", "FECMO"].map((b, i) => (
+                        {degrees.map((b, i) => (
                             <>
                                 {i > 0 && (
                                     <span key={`sep-${i}`} className="text-navy/30 text-lg">·</span>
                                 )}
                                 <span
                                     key={b}
-                                    className="bg-teal-light border border-teal/30 rounded px-3.5 py-2 text-[12px] font-semibold text-white tracking-[0.06em]"
+                                    className="bg-teal-light border border-teal/30 rounded px-1.5 py-1 text-[10px] font-semibold text-white tracking-[0.06em]"
                                 >
                                     {b}
                                 </span>

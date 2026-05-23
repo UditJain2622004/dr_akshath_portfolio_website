@@ -226,8 +226,9 @@ export default function About() {
                     </div>
 
                     {/* Heading */}
+                    {/**/}
                     <h2 className="reveal reveal-d1 font-display text-[clamp(30px,3.5vw,46px)] text-navy leading-[1.1] font-bold mb-5">
-                        Healing Hearts with{" "}
+                        Healing Lives with{" "}
                         <em className="italic" style={{ color: "#0f8c7a" }}>
                             Precision
                         </em>{" "}
@@ -238,8 +239,8 @@ export default function About() {
                     <p className="reveal reveal-d2 text-[15px] font-light text-[#4a6275] leading-[1.85] mb-5" style={{ maxWidth: 500 }}>
                         A certified and qualified <strong className="font-semibold text-navy">MBBS doctor</strong> with{" "}
                         <strong className="font-semibold text-navy">13+ years</strong> of experience in medical consultation, counseling, and treatment.
-                        Trained in cardiac critical care (ECHO/ECMO), emergency medical services, occupational medicine (pre-employment and periodical assessments),
-                        and aesthetic medicine & cosmetology, with hands-on experience in patient assessment, documentation, and insurance-related records.
+                        Trained in Cardiac Critical Care, Cardiodiabetes, Cardiac Nutrition, Echocardiography, ECMO, Emergency Medical Services, Palliative Care, Occupational Medicine,
+                        and Aesthetic Medicine & Cosmetology, with hands-on experience in patient assessment, documentation, and insurance-related records.
                     </p>
 
                     {/* Specialization chips */}
