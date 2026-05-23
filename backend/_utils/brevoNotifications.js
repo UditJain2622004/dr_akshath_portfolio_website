@@ -7,6 +7,8 @@ const BOOKING_EVENT_TO_SUBJECT = {
   booking_rejected: "Appointment Rejected",
   booking_cancelled: "Appointment Cancelled",
   booking_completed: "Appointment Completed",
+  booking_delayed: "Appointment Delayed",
+  booking_back_on_schedule: "Doctor Back on Schedule",
 };
 
 const BOOKING_EVENT_TO_SMS_TEXT = {
@@ -15,6 +17,8 @@ const BOOKING_EVENT_TO_SMS_TEXT = {
   booking_rejected: "Your appointment request was rejected.",
   booking_cancelled: "Your appointment was cancelled.",
   booking_completed: "Your appointment has been marked completed.",
+  booking_delayed: "Your appointment is delayed by approximately {delayMinutes} minutes. We apologize for the inconvenience.",
+  booking_back_on_schedule: "Good news! The doctor is back on schedule. Your appointment is on time.",
 };
 
 async function resolveDoctorName() {
@@ -147,6 +151,97 @@ export async function sendBookingNotification(event, payload) {
   const results = await Promise.allSettled(tasks);
   const rejected = results.filter((r) => r.status === "rejected");
   if (rejected.length === results.length) {
+    throw rejected[0].reason;
+  }
+}
+
+/**
+ * Send a delay-specific notification to a patient.
+ * @param {string} event - 'booking_delayed' or 'booking_back_on_schedule'
+ * @param {object} appointment - The appointment data
+ * @param {number} delayMinutes - Delay duration in minutes
+ * @param {string} clinicName - Human-readable clinic name
+ */
+export async function sendDelayNotification(event, appointment, delayMinutes, clinicName) {
+  if (!event || !appointment) return;
+
+  const doctorName = await resolveDoctorName();
+  const clinicMeta = {
+    clinicName: clinicName || appointment.clinicId,
+    clinicAddress: '',
+  };
+
+  // Resolve clinic address if we have clinicId
+  if (appointment.clinicId) {
+    try {
+      const doc = await db.collection('clinics').doc(appointment.clinicId).get();
+      if (doc.exists) {
+        clinicMeta.clinicAddress = doc.data().address || '';
+        clinicMeta.clinicName = doc.data().name || clinicName;
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Build SMS with delay minutes interpolated
+  const smsTemplate = BOOKING_EVENT_TO_SMS_TEXT[event] || 'Appointment update.';
+  const smsContent = smsTemplate.replace('{delayMinutes}', String(delayMinutes));
+
+  // Build delay-specific HTML
+  const statusLine = event === 'booking_delayed'
+    ? `Your appointment is delayed by approximately <strong>${delayMinutes} minutes</strong>. We apologize for the inconvenience.`
+    : `Good news! The doctor is back on schedule. Your appointment is on time.`;
+
+  const delayHtml = `
+    <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.5;">
+      <h2>Nexus Enliven Hospital</h2>
+      <p>Hello ${appointment.patientName || 'Patient'},</p>
+      <p>${statusLine}</p>
+      <ul>
+        <li><strong>Doctor:</strong> ${doctorName}</li>
+        <li><strong>Clinic:</strong> ${clinicMeta.clinicName}</li>
+        <li><strong>Address:</strong> ${clinicMeta.clinicAddress || '-'}</li>
+        <li><strong>Date:</strong> ${appointment.appointmentDate || '-'}</li>
+        <li><strong>Time:</strong> ${appointment.timeSlot || '-'}</li>
+      </ul>
+      <p>For support, contact Nexus Enliven Hospital.</p>
+    </div>
+  `;
+
+  const tasks = [];
+
+  // SMS
+  const patientPhone = normalizePhone(appointment.patientPhone || appointment.patientId);
+  if (patientPhone) {
+    tasks.push(
+      brevoRequest('transactionalSMS/send', {
+        sender: 'NE Hospital',
+        recipient: patientPhone,
+        content: `${smsContent} Doctor: ${doctorName}. Clinic: ${clinicMeta.clinicName}. Date: ${appointment.appointmentDate || '-'}, Time: ${appointment.timeSlot || '-'}.`,
+        type: 'transactional',
+        tag: event,
+        organisationPrefix: 'Nexus Enliven Hospital',
+      })
+    );
+  }
+
+  // Email
+  if (appointment.patientEmail) {
+    tasks.push(
+      brevoRequest('smtp/email', {
+        sender: {
+          name: 'Nexus Enliven Hospital',
+          email: process.env.BREVO_SENDER_EMAIL || 'no-reply@nexusenliven.com',
+        },
+        to: [{ email: appointment.patientEmail, name: appointment.patientName || 'Patient' }],
+        subject: BOOKING_EVENT_TO_SUBJECT[event] || 'Appointment Update',
+        htmlContent: delayHtml,
+      })
+    );
+  }
+
+  const results = await Promise.allSettled(tasks);
+  const rejected = results.filter((r) => r.status === 'rejected');
+  if (rejected.length === results.length && rejected.length > 0) {
     throw rejected[0].reason;
   }
 }

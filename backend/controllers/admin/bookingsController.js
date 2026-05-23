@@ -4,6 +4,7 @@ import { sendError, sendSuccess, validateRequired, isValidDate, isValidTime } fr
 import { generateSlotTimes, buildSlotId, classifyBookingDate, parseTime } from '../../_utils/slotGenerator.js';
 import { normalizePhone } from '../../_utils/phoneUtils.js';
 import { checkDoctorLeave } from '../../_utils/leaveChecker.js';
+import { sendDelayNotification } from '../../_utils/brevoNotifications.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
@@ -256,7 +257,7 @@ async function handlePatch(req, res) {
   const result = await verifyAuth(req);
   if (result.error) return sendError(res, result.status, result.error);
 
-  const { appointmentId, action, patientName, patientPhone, patientEmail, clinicId } = req.body;
+  const { appointmentId, action, patientName, patientPhone, patientEmail, clinicId, delayMinutes } = req.body;
   if (!appointmentId) return sendError(res, 400, 'Missing appointmentId');
 
   try {
@@ -327,11 +328,34 @@ async function handlePatch(req, res) {
     if (patientEmail !== undefined) updateData.patientEmail = patientEmail || null;
     if (clinicId) updateData.clinicId = clinicId;
 
+    // Per-appointment delay override
+    if (delayMinutes !== undefined) {
+      if (delayMinutes === null || delayMinutes === 0) {
+        // Clear per-appointment override
+        updateData.delayMinutes = FieldValue.delete();
+        updateData.delayNotifiedAt = FieldValue.delete();
+      } else {
+        if (typeof delayMinutes !== 'number' || delayMinutes < 1 || delayMinutes > 180) {
+          return sendError(res, 400, 'delayMinutes must be a number between 1 and 180, or null to clear');
+        }
+        updateData.delayMinutes = delayMinutes;
+        updateData.delayNotifiedAt = FieldValue.serverTimestamp();
+      }
+    }
+
     if (Object.keys(updateData).length === 0) {
       return sendError(res, 400, 'No valid updates provided');
     }
 
     await appointmentRef.update(updateData);
+
+    // Send per-appointment delay notification
+    if (delayMinutes !== undefined && delayMinutes !== null && delayMinutes > 0) {
+      const clinicDoc = await db.collection('clinics').doc(appointment.clinicId).get();
+      const clinicName = clinicDoc.exists ? clinicDoc.data().name : appointment.clinicId;
+      sendDelayNotification('booking_delayed', { ...appointment, id: appointmentId }, delayMinutes, clinicName)
+        .catch(err => console.error('[Delay] Per-appointment notification failed:', err.message));
+    }
 
     return sendSuccess(res, {
       appointmentId,

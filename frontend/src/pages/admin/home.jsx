@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
-import { getDashboard, getClinics } from '../../services/adminApi';
+import { getDashboard, getClinics, getDelays } from '../../services/adminApi';
 import { toLocalDateStr } from '../../utils/dateUtils';
 
 const today = toLocalDateStr();
@@ -24,17 +24,19 @@ export default function HomePage({ setPage, pendingCount }) {
   const [dashboard, setDashboard] = useState(null);
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeDelays, setActiveDelays] = useState([]); // [ { clinicId, delayMinutes, ... } ]
 
   const todayLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    Promise.all([getDashboard(token, today), getClinics(token)])
-      .then(([dash, cl]) => {
+    Promise.all([getDashboard(token, today), getClinics(token), getDelays(token, today)])
+      .then(([dash, cl, dl]) => {
         if (cancelled) return;
         setDashboard(dash);
         setClinics(cl.clinics || []);
+        setActiveDelays(dl.delays || []);
       })
       .catch(console.error)
       .finally(() => {
@@ -116,6 +118,33 @@ export default function HomePage({ setPage, pendingCount }) {
             </div>
             <span style={{ color: '#d97706' }}><I n="chevR" s={16} /></span>
           </button>
+        </div>
+      )}
+
+      {/* ── Active Delay Alert ── */}
+      {!loading && activeDelays.length > 0 && (
+        <div className="mx-4 mt-3 md:mx-0">
+          {activeDelays.map(d => {
+            const clinic = clinicMap[d.clinicId];
+            return (
+              <button key={d.id} onClick={() => setPage('schedule', { clinicId: d.clinicId })}
+                className="w-full rounded-2xl p-3.5 flex items-center justify-between hover:opacity-90 transition-opacity mb-2"
+                style={{ background: '#fff7ed', border: '1.5px solid #fed7aa' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#fef3c7' }}>
+                    <span style={{ color: '#d97706' }}><I n="delay" s={18} /></span>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-[13px]" style={{ color: T.navy, fontFamily: 'Outfit' }}>
+                      {clinic?.name || d.clinicId} — {d.delayMinutes} min delay
+                    </p>
+                    <p className="text-[11px]" style={{ color: '#92400e', fontFamily: 'Outfit' }}>Running late · patients notified</p>
+                  </div>
+                </div>
+                <span style={{ color: '#d97706' }}><I n="chevR" s={16} /></span>
+              </button>
+            );
+          })}
         </div>
       )}
 

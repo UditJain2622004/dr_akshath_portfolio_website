@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
-import { getSchedule, getClinics, updateBooking } from '../../services/adminApi';
+import { getSchedule, getClinics, updateBooking, getDelays, setDelay, clearDelay } from '../../services/adminApi';
 import ScheduleCard from '../../components/admin/appointmentCard';
 import ClinicFilterBar from '../../components/admin/ClinicFilterBar';
+import DelayModal from '../../components/admin/DelayModal';
 import { toLocalDateStr } from '../../utils/dateUtils';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
@@ -40,6 +41,10 @@ export default function SchedulePage() {
   const [dateOffset, setDateOffset] = useState(0);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+
+  // Delay state
+  const [delays, setDelays] = useState({});       // { clinicId: delayMinutes }
+  const [delayModal, setDelayModal] = useState(null); // { clinicId, clinicName, currentDelay } | null
 
   const today = new Date();
   const currentDate = offsetDate(today, dateOffset);
@@ -79,6 +84,22 @@ export default function SchedulePage() {
   useEffect(() => {
     fetchSchedule();
   }, [fetchSchedule]);
+
+  // Fetch active delays for this date
+  const fetchDelays = useCallback(() => {
+    if (!token) return;
+    getDelays(token, dateStr)
+      .then(r => {
+        const map = {};
+        (r.delays || []).forEach(d => { map[d.clinicId] = d.delayMinutes; });
+        setDelays(map);
+      })
+      .catch(console.error);
+  }, [token, dateStr]);
+
+  useEffect(() => {
+    fetchDelays();
+  }, [fetchDelays]);
 
   // Client-side status + search filter
   const filtered = useMemo(() => {
@@ -120,7 +141,32 @@ export default function SchedulePage() {
     }
   };
 
-  const renderCard = (appt) => (
+  // Per-appointment delay handler
+  const handleDelay = async (appointmentId, delayMinutes) => {
+    try {
+      await updateBooking(token, { appointmentId, delayMinutes });
+      fetchSchedule();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Clinic-level delay handler
+  const handleClinicDelay = async (clinicId, delayMinutes) => {
+    try {
+      if (delayMinutes === null || delayMinutes === 0) {
+        await clearDelay(token, clinicId, dateStr);
+      } else {
+        await setDelay(token, { clinicId, date: dateStr, delayMinutes });
+      }
+      fetchDelays();
+      fetchSchedule();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const renderCard = (appt, clinicId) => (
     <ScheduleCard
       key={appt.id}
       appt={appt}
@@ -129,6 +175,8 @@ export default function SchedulePage() {
       expanded={expandedId === appt.id}
       onToggle={() => setExpandedId(expandedId === appt.id ? null : appt.id)}
       onAction={handleAction}
+      onDelay={handleDelay}
+      activeClinicDelay={delays[clinicId || appt.clinicId] || null}
     />
   );
 
@@ -149,6 +197,43 @@ export default function SchedulePage() {
             <p className="text-[10px]" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>{fullDate}</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Running Late button */}
+            <button
+              onClick={() => {
+                const targetClinic = selectedClinic
+                  ? clinics.find(c => c.id === selectedClinic)
+                  : (clinics.length === 1 ? clinics[0] : null);
+                if (targetClinic) {
+                  setDelayModal({
+                    clinicId: targetClinic.id,
+                    clinicName: targetClinic.name || targetClinic.id,
+                    currentDelay: delays[targetClinic.id] || null,
+                  });
+                } else {
+                  // Multiple clinics, no filter — show a prompt to select
+                  // For now open modal for the first clinic with a delay, or first clinic
+                  const first = clinics[0];
+                  if (first) {
+                    setDelayModal({
+                      clinicId: first.id,
+                      clinicName: first.name || first.id,
+                      currentDelay: delays[first.id] || null,
+                    });
+                  }
+                }
+              }}
+              className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 transition-all"
+              style={{
+                background: Object.keys(delays).length > 0 ? '#fff7ed' : T.mintFaint,
+                border: `1px solid ${Object.keys(delays).length > 0 ? '#fed7aa' : T.mint}`,
+                color: Object.keys(delays).length > 0 ? '#d97706' : T.navy,
+              }}
+            >
+              <I n="delay" s={14} />
+              <span className="text-[10px] font-bold" style={{ fontFamily: 'Outfit' }}>
+                {Object.keys(delays).length > 0 ? 'Late' : 'Late?'}
+              </span>
+            </button>
             <button onClick={fetchSchedule}
               disabled={loading}
               aria-label="Refresh schedule"
@@ -257,6 +342,7 @@ export default function SchedulePage() {
             {Object.entries(grouped).map(([clinicId, appts], idx) => {
               const clinic = clinics.find(c => c.id === clinicId);
               const color = CLINIC_COLORS[idx % CLINIC_COLORS.length];
+              const clinicDelay = delays[clinicId];
               return (
                 <div key={clinicId}>
                   {/* Clinic section header */}
@@ -269,9 +355,54 @@ export default function SchedulePage() {
                       style={{ background: color + '18', color, border: `1px solid ${color}44`, fontFamily: 'Outfit' }}>
                       {appts.length}
                     </span>
+                    {/* Per-clinic delay badge + edit button */}
+                    <button
+                      className="ml-auto flex items-center gap-1 rounded-full px-2 py-0.5 transition-all"
+                      style={{
+                        background: clinicDelay ? '#fff7ed' : 'transparent',
+                        border: clinicDelay ? '1px solid #fed7aa' : `1px solid ${T.mint}`,
+                        color: clinicDelay ? '#d97706' : '#9ca3af',
+                      }}
+                      onClick={() => setDelayModal({
+                        clinicId,
+                        clinicName: clinic?.name || clinicId,
+                        currentDelay: clinicDelay || null,
+                      })}
+                    >
+                      <I n="delay" s={11} />
+                      <span className="text-[9px] font-bold" style={{ fontFamily: 'Outfit' }}>
+                        {clinicDelay ? `+${clinicDelay}m` : 'Late?'}
+                      </span>
+                    </button>
                   </div>
+
+                  {/* Active delay banner for this clinic */}
+                  {clinicDelay && (
+                    <div className="rounded-xl px-3 py-2.5 mb-3 flex items-center justify-between"
+                      style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                      <div className="flex items-center gap-2">
+                        <span style={{ color: '#d97706' }}><I n="delay" s={15} /></span>
+                        <div>
+                          <p className="text-[11px] font-bold" style={{ color: '#92400e', fontFamily: 'Outfit' }}>
+                            Running ~{clinicDelay} min late
+                          </p>
+                          <p className="text-[9px]" style={{ color: '#d97706', fontFamily: 'Outfit' }}>
+                            Patients have been notified
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleClinicDelay(clinicId, null)}
+                        className="text-[10px] font-bold rounded-lg px-2.5 py-1.5"
+                        style={{ background: 'white', color: '#16a34a', border: '1px solid #bbf7d0', fontFamily: 'Outfit' }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {appts.map(renderCard)}
+                    {appts.map(a => renderCard(a, clinicId))}
                   </div>
                 </div>
               );
@@ -281,11 +412,49 @@ export default function SchedulePage() {
 
         {/* Flat list (specific clinic selected) */}
         {!loading && !error && !grouped && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filtered.map(renderCard)}
-          </div>
+          <>
+            {/* Delay banner for selected clinic */}
+            {selectedClinic && delays[selectedClinic] && (
+              <div className="rounded-xl px-3 py-2.5 mb-3 flex items-center justify-between"
+                style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                <div className="flex items-center gap-2">
+                  <span style={{ color: '#d97706' }}><I n="delay" s={15} /></span>
+                  <div>
+                    <p className="text-[11px] font-bold" style={{ color: '#92400e', fontFamily: 'Outfit' }}>
+                      Running ~{delays[selectedClinic]} min late
+                    </p>
+                    <p className="text-[9px]" style={{ color: '#d97706', fontFamily: 'Outfit' }}>
+                      Patients have been notified
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleClinicDelay(selectedClinic, null)}
+                  className="text-[10px] font-bold rounded-lg px-2.5 py-1.5"
+                  style={{ background: 'white', color: '#16a34a', border: '1px solid #bbf7d0', fontFamily: 'Outfit' }}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filtered.map(a => renderCard(a, selectedClinic))}
+            </div>
+          </>
         )}
       </div>
+
+      {/* Clinic-level DelayModal */}
+      <DelayModal
+        isOpen={!!delayModal}
+        onClose={() => setDelayModal(null)}
+        onConfirm={(minutes) => {
+          if (delayModal) handleClinicDelay(delayModal.clinicId, minutes);
+        }}
+        mode="clinic"
+        clinicName={delayModal?.clinicName || ''}
+        currentDelay={delayModal?.currentDelay || null}
+      />
     </div>
   );
 }

@@ -78,3 +78,13 @@ export const getSlots = (token, { date, clinicId } = {}) => {
 
 export const manageSlot = (token, body) =>
   request('/admin/slots', token, { method: 'POST', body });
+
+// ── Delays ─────────────────────────────────────────────────────────────────────
+export const getDelays = (token, date) =>
+  request(`/admin/delay?date=${date}`, token);
+
+export const setDelay = (token, body) =>
+  request('/admin/delay', token, { method: 'POST', body });
+
+export const clearDelay = (token, clinicId, date) =>
+  request(`/admin/delay?clinicId=${clinicId}&date=${date}`, token, { method: 'DELETE' });

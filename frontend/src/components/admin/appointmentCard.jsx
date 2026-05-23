@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { T, I } from './theme';
 import ConfirmModal from './ConfirmModal';
+import DelayModal from './DelayModal';
 
 const CLINIC_COLORS = ['#0f8c7a', '#6366f1', '#ec4899', '#f97316', '#3b82f6', '#16a34a'];
 
@@ -18,8 +19,9 @@ export function getClinicColor(clinics = [], clinicId) {
   return idx >= 0 ? CLINIC_COLORS[idx % CLINIC_COLORS.length] : '#9ca3af';
 }
 
-export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], showClinicBadge = false, onAction }) {
-  const [confirming, setConfirming] = useState(null); // 'complete' | 'cancel' | 'delay'
+export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], showClinicBadge = false, onAction, onDelay, activeClinicDelay = null }) {
+  const [confirming, setConfirming] = useState(null); // 'complete' | 'cancel'
+  const [showDelayModal, setShowDelayModal] = useState(false);
   const s = STATUS_CONFIG[appt.status] || STATUS_CONFIG.upcoming;
   const canComplete = !['completed', 'cancelled', 'rejected'].includes(appt.status);
   const canCancel = !['completed', 'cancelled', 'rejected'].includes(appt.status);
@@ -46,37 +48,66 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
       confirmColor: "#dc2626",
       icon: "x"
     };
-    if (confirming === 'delay') return {
-      title: "Still in development",
-      message: `This feature is not built yet.`,
-      // title: "Mark as Delayed?",
-      // message: `This will flag the appointment as delayed. Send notification to patient?`,
-      confirmText: "Yes, Delay",
-      confirmColor: "#d97706",
-      icon: "delay"
-    };
     return {};
   };
+
+  // Resolve effective delay: use the larger of per-appointment vs clinic-level
+  const effectiveDelay = Math.max(appt.delayMinutes || 0, activeClinicDelay || 0) || null;
+
+  // Compute estimated delayed time
+  const addMinutes = (timeStr, mins) => {
+    if (!timeStr || !mins) return timeStr;
+    const [h, m] = timeStr.split(':').map(Number);
+    const total = h * 60 + m + mins;
+    const nh = Math.floor(total / 60) % 24;
+    const nm = total % 60;
+    return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+  };
+  const estimatedTime = effectiveDelay > 0 ? addMinutes((appt.timeSlot || '').split(' ')[0], effectiveDelay) : null;
+
+  // Override status bar color to amber when delayed
+  const barColor = effectiveDelay > 0 ? '#f97316' : s.barColor;
 
   return (
     <>
       <div className="rounded-2xl overflow-hidden hover:shadow-md transition-shadow relative"
-        style={{ background: T.white, border: `1px solid ${T.mint}`, boxShadow: '0 2px 10px rgba(7,25,46,0.05)' }}>
+        style={{ background: T.white, border: `1px solid ${effectiveDelay > 0 ? '#fed7aa' : T.mint}`, boxShadow: '0 2px 10px rgba(7,25,46,0.05)' }}>
 
         {/* ── Main Row ── */}
         <div className="flex items-stretch">
           {/* Status colour bar */}
-          <div className="w-0.5 flex-shrink-0" style={{ background: s.barColor, borderRadius: '16px 0 0 0' }} />
+          <div className="w-0.5 flex-shrink-0" style={{ background: barColor, borderRadius: '16px 0 0 0' }} />
 
           {/* Time block */}
           <div className="flex flex-col items-center justify-center px-3 flex-shrink-0"
-            style={{ minWidth: 52, borderRight: `1px solid ${T.mint}`, paddingTop: 14, paddingBottom: 14 }}>
-            <span className="font-bold leading-none appointment-time" style={{ color: T.teal, fontFamily: 'Outfit', fontSize: 15 }}>
-              {(appt.timeSlot || '').split(' ')[0]}
-            </span>
-            <span className="text-[9px] mt-0.5" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>
-              {(appt.timeSlot || '').split(' ')[1]}
-            </span>
+            style={{ minWidth: 58, borderRight: `1px solid ${T.mint}`, paddingTop: 14, paddingBottom: 14 }}>
+            {effectiveDelay > 0 ? (
+              <>
+                {/* Original time — struck out */}
+                <span className="leading-none appointment-time" style={{
+                  color: '#9ca3af', fontFamily: 'Outfit', fontSize: 11,
+                  textDecoration: 'line-through', textDecorationColor: '#d97706',
+                }}>
+                  {(appt.timeSlot || '').split(' ')[0]}
+                </span>
+                {/* Estimated new time */}
+                <span className="font-bold leading-none mt-1" style={{ color: '#d97706', fontFamily: 'Outfit', fontSize: 15 }}>
+                  ~{estimatedTime}
+                </span>
+                <span className="text-[8px] mt-0.5 font-semibold" style={{ color: '#d97706', fontFamily: 'Outfit' }}>
+                  +{effectiveDelay}m late
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-bold leading-none appointment-time" style={{ color: T.teal, fontFamily: 'Outfit', fontSize: 15 }}>
+                  {(appt.timeSlot || '').split(' ')[0]}
+                </span>
+                <span className="text-[9px] mt-0.5" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>
+                  {(appt.timeSlot || '').split(' ')[1]}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Patient info */}
@@ -108,13 +139,6 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
                   {appt.type === 'followup' ? 'Follow-up' : 'New Patient'}
                 </span>
               )}
-
-              {/* {showClinicBadge && (
-                <span className="rounded-full px-2 py-0.5 text-[9px] font-bold truncate max-w-[90px]"
-                  style={{ background: "white", color: clinicColor, border: `1px solid ${clinicColor}44`, fontFamily: 'Outfit' }}>
-                  {clinicName}
-                </span>
-              )} */}
             </div>
           </button>
 
@@ -168,9 +192,11 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
             <div className="flex gap-2">
               <button className="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5"
                 style={{ background: 'white', border: '1px solid #fed7aa' }}
-                onClick={() => setConfirming('delay')}>
+                onClick={() => setShowDelayModal(true)}>
                 <span style={{ color: '#d97706' }}><I n="delay" s={13} /></span>
-                <span className="text-[10px] font-semibold" style={{ color: '#d97706', fontFamily: 'Outfit' }}>Delay</span>
+                <span className="text-[10px] font-semibold" style={{ color: '#d97706', fontFamily: 'Outfit' }}>
+                  {effectiveDelay > 0 ? `Delay (+${effectiveDelay}m)` : 'Delay'}
+                </span>
               </button>
               {canCancel && (
                 <button className="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5"
@@ -190,6 +216,17 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
         onClose={() => setConfirming(null)}
         onConfirm={handleConfirmedAction}
         {...getConfirmProps()}
+      />
+
+      <DelayModal
+        isOpen={showDelayModal}
+        onClose={() => setShowDelayModal(false)}
+        onConfirm={(minutes) => {
+          if (onDelay) onDelay(appt.id, minutes);
+        }}
+        mode="appointment"
+        patientName={appt.patientName}
+        currentDelay={appt.delayMinutes || null}
       />
     </>
   );
