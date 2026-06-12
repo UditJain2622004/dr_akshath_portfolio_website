@@ -78,15 +78,15 @@ function PendingCard({ booking, clinics, onConfirm, onReject }) {
             style={{ background: 'white', color: clinicColor, border: `1px solid ${clinicColor}44`, fontFamily: 'Outfit' }}>
             {clinicName}
           </span>
-          {booking.type && (
+          {booking.type === 'followup' && (
             <span className="rounded-full px-2 py-0.5 text-[9px] font-bold"
               style={{
-                color: booking.type === 'followup' ? '#3b82f6' : '#16a34a',
+                color: '#3b82f6',
                 background: 'white',
-                border: `1px solid ${booking.type === 'followup' ? '#bfdbfe' : '#bbf7d0'}`,
+                border: '1px solid #bfdbfe',
                 fontFamily: 'Outfit',
               }}>
-              {booking.type === 'followup' ? 'Follow-up' : 'New Patient'}
+              Follow-up
             </span>
           )}
         </div>
@@ -250,7 +250,7 @@ export default function PendingPage({ onPendingChanged }) {
                 Today — Needs Immediate Action
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
               {todayItems.map(renderCard)}
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function PendingPage({ onPendingChanged }) {
                 Future Requests
               </p>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
               {laterItems.map(renderCard)}
             </div>
           </div>

@@ -29,6 +29,15 @@ function currentISTTime() {
   return nowIST.split(', ')[1].split(':').slice(0, 2).join(':');
 }
 
+function toMinutes(hhmm) {
+  const match = /^(\d{2}):(\d{2})$/.exec(String(hhmm || ''));
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (Number.isNaN(h) || Number.isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
 /**
  * Fetch upcoming appointments for a clinic on a date (status in ACTIVE_STATUSES,
  * timeSlot >= current IST time).
@@ -41,9 +50,14 @@ async function getUpcomingAppointments(clinicId, date) {
     .get();
 
   const now = currentISTTime();
+  const nowMinutes = toMinutes(now);
   return snapshot.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
-    .filter(a => a.timeSlot >= now);
+    .filter(a => {
+      const slotMinutes = toMinutes(a.timeSlot);
+      if (slotMinutes == null || nowMinutes == null) return false;
+      return slotMinutes >= nowMinutes;
+    });
 }
 
 export default async function handler(req, res) {

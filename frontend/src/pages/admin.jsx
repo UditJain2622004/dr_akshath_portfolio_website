@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import Navbar from '../components/admin/navbar';
@@ -41,20 +41,53 @@ export default function Admin() {
   // Extract current page from URL: /admin/schedule -> schedule
   const currentPath = location.pathname.split('/').pop() || 'home';
 
+  const prevPendingRef = useRef(0);
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const showNewRequestNotification = useCallback((newCount, oldCount) => {
+    if (newCount <= oldCount || oldCount < 0) return;
+    const diff = newCount - oldCount;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification('New Appointment Request', {
+          body: `${diff} new pending request${diff > 1 ? 's' : ''} (${newCount} total)`,
+          icon: '🏥',
+          tag: 'pending-requests', // replaces previous notification
+        });
+      } catch { /* mobile Safari etc. */ }
+    }
+  }, []);
+
   const fetchPendingCount = useCallback(() => {
     if (!token) return;
     getBookings(token, { status: 'pending' })
-      .then(r => setPendingCount((r.bookings || []).length))
+      .then(r => {
+        const count = (r.bookings || []).length;
+        showNewRequestNotification(count, prevPendingRef.current);
+        prevPendingRef.current = count;
+        setPendingCount(count);
+      })
       .catch(() => {});
-  }, [token]);
+  }, [token, showNewRequestNotification]);
 
-  // Keep pending badge in sync with Firestore in realtime.
+  // Keep pending badge in sync — prefer Firestore realtime, fall back to polling.
   useEffect(() => {
     if (!user || !token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingCount(0);
+      prevPendingRef.current = 0;
       return undefined;
     }
 
+    let pollingInterval = null;
+
+    // Try realtime listener first
     const pendingQuery = query(
       collection(db, 'appointments'),
       where('status', '==', 'pending')
@@ -62,15 +95,25 @@ export default function Admin() {
 
     const unsubscribe = onSnapshot(
       pendingQuery,
-      (snapshot) => setPendingCount(snapshot.size),
+      (snapshot) => {
+        const count = snapshot.size;
+        showNewRequestNotification(count, prevPendingRef.current);
+        prevPendingRef.current = count;
+        setPendingCount(count);
+      },
       (error) => {
-        console.error('Pending request realtime listener failed:', error);
+        console.warn('Realtime listener failed, falling back to polling:', error.message);
+        // Initial fetch + start polling every 30 seconds
         fetchPendingCount();
+        pollingInterval = setInterval(fetchPendingCount, 30_000);
       }
     );
 
-    return unsubscribe;
-  }, [user, token, fetchPendingCount]);
+    return () => {
+      unsubscribe();
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
+  }, [user, token, fetchPendingCount, showNewRequestNotification]);
 
   const tabs = [
     { id: 'home',     icon: 'home',     label: 'Dashboard' },

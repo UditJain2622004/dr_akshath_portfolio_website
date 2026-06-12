@@ -30,8 +30,8 @@ export default function CreateBookingPage({ setPage }) {
       .then(r => {
         const cl = r.clinics || [];
         setClinics(cl);
-        if (cl.length > 0 && !form.clinicId) {
-          setForm(f => ({ ...f, clinicId: cl[0].id }));
+        if (cl.length > 0) {
+          setForm(f => (f.clinicId ? f : { ...f, clinicId: cl[0].id }));
         }
       })
       .catch(console.error);

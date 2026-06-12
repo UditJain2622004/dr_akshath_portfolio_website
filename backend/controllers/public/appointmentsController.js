@@ -18,9 +18,21 @@ export default async function handler(req, res) {
 }
 
 async function handleGet(req, res) {
-  const { clinicId, date, status, patientPhone } = req.query;
+  const { clinicId, date, status, patientPhone, checkFollowup } = req.query;
 
   try {
+    if (checkFollowup === 'true') {
+      if (!patientPhone) return sendError(res, 400, 'Missing patientPhone');
+      let normalizedPhone;
+      try {
+        normalizedPhone = normalizePhone(patientPhone);
+      } catch (err) {
+        return sendError(res, 400, err.message);
+      }
+      const type = await detectFollowUp(normalizedPhone);
+      return sendSuccess(res, { type });
+    }
+
     let query = db.collection('appointments');
 
     if (clinicId) {

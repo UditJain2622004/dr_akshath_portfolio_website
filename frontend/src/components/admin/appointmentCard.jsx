@@ -14,7 +14,7 @@ const STATUS_CONFIG = {
   rejected: { bg: 'white', color: '#dc2626', border: '#fecaca', dot: '#ef4444', label: 'Rejected', barColor: '#ef4444' },
 };
 
-export function getClinicColor(clinics = [], clinicId) {
+function getClinicColor(clinics = [], clinicId) {
   const idx = clinics.findIndex(c => c.id === clinicId);
   return idx >= 0 ? CLINIC_COLORS[idx % CLINIC_COLORS.length] : '#9ca3af';
 }
@@ -25,6 +25,7 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
   const s = STATUS_CONFIG[appt.status] || STATUS_CONFIG.upcoming;
   const canComplete = !['completed', 'cancelled', 'rejected'].includes(appt.status);
   const canCancel = !['completed', 'cancelled', 'rejected'].includes(appt.status);
+  const canDelay = ['pending', 'confirmed'].includes(appt.status);
   const clinicColor = getClinicColor(clinics, appt.clinicId);
   const clinicName = clinics.find(c => c.id === appt.clinicId)?.name || appt.clinicName || appt.clinicId;
 
@@ -190,14 +191,16 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
             )}
 
             <div className="flex gap-2">
-              <button className="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5"
-                style={{ background: 'white', border: '1px solid #fed7aa' }}
-                onClick={() => setShowDelayModal(true)}>
-                <span style={{ color: '#d97706' }}><I n="delay" s={13} /></span>
-                <span className="text-[10px] font-semibold" style={{ color: '#d97706', fontFamily: 'Outfit' }}>
-                  {effectiveDelay > 0 ? `Delay (+${effectiveDelay}m)` : 'Delay'}
-                </span>
-              </button>
+              {canDelay && (
+                <button className="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5"
+                  style={{ background: 'white', border: '1px solid #fed7aa' }}
+                  onClick={() => setShowDelayModal(true)}>
+                  <span style={{ color: '#d97706' }}><I n="delay" s={13} /></span>
+                  <span className="text-[10px] font-semibold" style={{ color: '#d97706', fontFamily: 'Outfit' }}>
+                    {effectiveDelay > 0 ? `Delay (+${effectiveDelay}m)` : 'Delay'}
+                  </span>
+                </button>
+              )}
               {canCancel && (
                 <button className="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5"
                   style={{ background: 'white', border: '1px solid #fecaca' }}
@@ -219,7 +222,8 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
       />
 
       <DelayModal
-        isOpen={showDelayModal}
+        key={`appt-delay-${appt.id}-${appt.delayMinutes ?? 'none'}-${showDelayModal ? 'open' : 'closed'}`}
+        isOpen={canDelay && showDelayModal}
         onClose={() => setShowDelayModal(false)}
         onConfirm={(minutes) => {
           if (onDelay) onDelay(appt.id, minutes);

@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // Helper: Check if the request comes from an authenticated user.
+    // Only the admin/doctor has a Firebase Auth account in this app,
+    // so "authenticated" effectively means "is admin".
+    // ─────────────────────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // appointments
+    //   - Client SDK reads by authenticated user (realtime onSnapshot)
+    //   - All writes go through the backend Admin SDK (bypasses rules)
+    // ─────────────────────────────────────────────────────────────
+    match /appointments/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // clinics — read-only for authenticated users
+    // ─────────────────────────────────────────────────────────────
+    match /clinics/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // doctorSlots — read-only for authenticated users
+    // ─────────────────────────────────────────────────────────────
+    match /doctorSlots/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // doctorLeaves — read-only for authenticated users
+    // ─────────────────────────────────────────────────────────────
+    match /doctorLeaves/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // doctorProfile — read-only for authenticated users
+    // ─────────────────────────────────────────────────────────────
+    match /doctorProfile/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // patients — fully locked (backend Admin SDK only)
+    // ─────────────────────────────────────────────────────────────
+    match /patients/{docId} {
+      allow read, write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // _health — internal backend health check (Admin SDK only)
+    // ─────────────────────────────────────────────────────────────
+    match /_health/{docId} {
+      allow read, write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Default: deny everything else
+    // ─────────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

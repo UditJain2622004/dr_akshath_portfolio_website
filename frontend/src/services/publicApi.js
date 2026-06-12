@@ -27,3 +27,6 @@ export const getSlotsByTime = (date, time) =>
   get(`/slots?date=${date}&time=${time}`);
 
 export const bookAppointment = (body) => post('/appointments', body);
+
+export const checkFollowup = (patientPhone) =>
+  get(`/appointments?checkFollowup=true&patientPhone=${encodeURIComponent(patientPhone)}`);

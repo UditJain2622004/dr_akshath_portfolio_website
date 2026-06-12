@@ -46,10 +46,10 @@ export default function ProfilePage({ setPage }) {
         <p className="text-[10px] font-bold text-slate-400 tracking-widest px-1 mb-3 uppercase">Account & Management</p>
 
         <ProfileOption
-          icon="sliders"
-          label="Manage Slots"
-          sublabel="Open or block appointment times"
-          onClick={() => setPage('manage')}
+          icon="delay"
+          label="Add Leave"
+          sublabel="Mark dates you are unavailable"
+          onClick={() => setPage('delay')}
         />
 
         <ProfileOption

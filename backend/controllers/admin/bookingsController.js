@@ -8,6 +8,7 @@ import { sendDelayNotification } from '../../_utils/brevoNotifications.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
+const DELAY_ALLOWED_STATUSES = ['pending', 'confirmed'];
 const TRAVEL_BUFFER_MINUTES = 30;
 const SLOT_DURATION_MINUTES = 10;
 const CROSS_CLINIC_GAP = SLOT_DURATION_MINUTES + TRAVEL_BUFFER_MINUTES; // 40 min start-to-start gap
@@ -82,9 +83,34 @@ async function handleGet(req, res) {
       query = query.where('status', 'in', statuses);
     }
 
-    const snapshot = await query.get();
+    if (dateFrom) query = query.where('appointmentDate', '>=', dateFrom);
+    if (dateTo) query = query.where('appointmentDate', '<=', dateTo);
 
-    let bookings = snapshot.docs.map((doc) => {
+    // Get the total count of matching documents using Firestore native count()
+    const countSnapshot = await query.count().get();
+    const totalCount = countSnapshot.data().count;
+
+    // Apply sorting: appointmentDate descending, then timeSlot ascending
+    query = query.orderBy('appointmentDate', 'desc').orderBy('timeSlot', 'asc');
+
+    // Apply pagination start document cursor if lastId is provided
+    if (lastId) {
+      const lastDoc = await db.collection('appointments').doc(lastId).get();
+      if (lastDoc.exists) {
+        query = query.startAfter(lastDoc);
+      }
+    }
+
+    // Query limit + 1 to check if there is a next page
+    const pageSize = parseInt(limit);
+    query = query.limit(pageSize + 1);
+
+    const snapshot = await query.get();
+    const docs = snapshot.docs;
+    const hasMore = docs.length > pageSize;
+    const paginatedDocs = hasMore ? docs.slice(0, pageSize) : docs;
+
+    const bookings = paginatedDocs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -94,27 +120,7 @@ async function handleGet(req, res) {
       };
     });
 
-    if (dateFrom) bookings = bookings.filter((b) => b.appointmentDate >= dateFrom);
-    if (dateTo) bookings = bookings.filter((b) => b.appointmentDate <= dateTo);
-
-    bookings.sort((a, b) => {
-      const dateDiff = (b.appointmentDate || '').localeCompare(a.appointmentDate || '');
-      if (dateDiff !== 0) return dateDiff;
-      return (a.timeSlot || '').localeCompare(b.timeSlot || '');
-    });
-
-    // Pagination logic
-    let startIndex = 0;
-    if (lastId) {
-      const idx = bookings.findIndex(b => b.id === lastId);
-      if (idx !== -1) startIndex = idx + 1;
-    }
-
-    const pageSize = parseInt(limit);
-    const paginated = bookings.slice(startIndex, startIndex + pageSize);
-    const hasMore = startIndex + pageSize < bookings.length;
-
-    const clinicIds = [...new Set(paginated.map((b) => b.clinicId).filter(Boolean))];
+    const clinicIds = [...new Set(bookings.map((b) => b.clinicId).filter(Boolean))];
     const clinicNames = {};
 
     if (clinicIds.length > 0) {
@@ -124,7 +130,7 @@ async function handleGet(req, res) {
       });
     }
 
-    const resultBookings = paginated.map((b) => ({
+    const resultBookings = bookings.map((b) => ({
       ...b,
       clinicName: clinicNames[b.clinicId] || b.clinicId,
     }));
@@ -132,7 +138,7 @@ async function handleGet(req, res) {
     return sendSuccess(res, { 
       bookings: resultBookings,
       hasMore,
-      totalCount: bookings.length 
+      totalCount 
     });
   } catch (error) {
     console.error('Error in GET /api/admin/bookings:', error);
@@ -330,6 +336,10 @@ async function handlePatch(req, res) {
 
     // Per-appointment delay override
     if (delayMinutes !== undefined) {
+      if (!DELAY_ALLOWED_STATUSES.includes(appointment.status)) {
+        return sendError(res, 400, `Cannot set delay for appointments with status "${appointment.status}"`);
+      }
+
       if (delayMinutes === null || delayMinutes === 0) {
         // Clear per-appointment override
         updateData.delayMinutes = FieldValue.delete();
@@ -350,7 +360,12 @@ async function handlePatch(req, res) {
     await appointmentRef.update(updateData);
 
     // Send per-appointment delay notification
-    if (delayMinutes !== undefined && delayMinutes !== null && delayMinutes > 0) {
+    if (
+      delayMinutes !== undefined &&
+      delayMinutes !== null &&
+      delayMinutes > 0 &&
+      DELAY_ALLOWED_STATUSES.includes(appointment.status)
+    ) {
       const clinicDoc = await db.collection('clinics').doc(appointment.clinicId).get();
       const clinicName = clinicDoc.exists ? clinicDoc.data().name : appointment.clinicId;
       sendDelayNotification('booking_delayed', { ...appointment, id: appointmentId }, delayMinutes, clinicName)

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useReveal } from "../hooks/useReveal";
-import { getClinics, getSlotsByClinic, getSlotsByTime, bookAppointment } from "../services/publicApi";
+import { getClinics, getSlotsByClinic, getSlotsByTime, bookAppointment, checkFollowup } from "../services/publicApi";
 
 function toDateStr(d) { return d.toLocaleDateString("en-CA"); }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
@@ -59,6 +59,7 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [isFollowup, setIsFollowup] = useState(false);
   const sheetRef = useRef(null);
 
   useEffect(() => {
@@ -67,9 +68,29 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      setIsFollowup(false);
+      return;
+    }
+    const digitsOnly = phone.replace(/\D/g, "");
+    if (digitsOnly.length >= 10) {
+      checkFollowup(phone)
+        .then(res => {
+          setIsFollowup(res.type === 'followup');
+        })
+        .catch(() => {
+          setIsFollowup(false);
+        });
+    } else {
+      setIsFollowup(false);
+    }
+  }, [phone, open]);
+
   const handleSubmit = () => {
     onSubmit({ fullName, email, phone }, () => {
       setFullName(""); setEmail(""); setPhone("");
+      setIsFollowup(false);
     });
   };
 
@@ -86,7 +107,7 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
 
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
-            <h3 className="text-[17px] font-semibold text-navy">Patient Details</h3>
+            <h3 className="text-[17px] font-semibold text-navy">Request Appointment</h3>
             <p className="text-[11px] text-navy/45 mt-0.5">Dr. Akshath Ramesh Acharya · MBBS</p>
           </div>
           <button type="button" onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-navy/40 hover:bg-navy/5 transition text-lg">✕</button>
@@ -107,6 +128,14 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
               <div className="text-[12px] font-semibold text-navy mt-0.5 truncate">{clinicName || "—"}</div>
             </div>
           </div>
+          {isFollowup && (
+            <div className="mt-2.5 pt-2.5 border-t border-navy/5 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <p className="text-[10px] font-bold text-blue-600 tracking-[0.04em] uppercase" style={{ fontFamily: 'Outfit' }}>
+                Follow-up Consultation
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
@@ -127,10 +156,10 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
           <button type="button" disabled={submitting} onClick={handleSubmit}
             className="w-full rounded-xl py-3.5 text-[13px] font-semibold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
             style={{ background: "linear-gradient(135deg,#0b3b52,#07192e)", boxShadow: "0 10px 26px rgba(7,25,46,0.22)" }}>
-            {submitting ? "Booking..." : "Confirm Appointment"}
+            {submitting ? "Submitting Request..." : "Submit Appointment Request"}
           </button>
           <p className="text-center text-[11px] text-navy/40 leading-[1.6]">
-            By confirming, you agree to our clinic terms. A confirmation message will be sent shortly.
+            This will submit an appointment request. It is not confirmed yet. You will receive an email or SMS notification once the doctor accepts the request.
           </p>
         </div>
       </div>
@@ -218,7 +247,7 @@ export default function Booking() {
 
   const handleSubmit = async ({ fullName, email, phone }, resetForm) => {
     if (!fullName || !phone) {
-      setStatusModal({ type: "error", title: "Missing details", message: "Name and phone are required to book an appointment." });
+      setStatusModal({ type: "error", title: "Missing details", message: "Name and phone are required to request an appointment." });
       return;
     }
     const clinicId = selectedClinic;
@@ -230,7 +259,12 @@ export default function Booking() {
     setSubmitting(true);
     try {
       const r = await bookAppointment({ clinicId, date: dateStr, time, patientName: fullName, patientPhone: phone, patientEmail: email || undefined });
-      setStatusModal({ type: "success", title: "Appointment requested", message: r.message || "Appointment booked successfully!" });
+      const isFollowUpAppt = r.appointmentType === 'followup';
+      setStatusModal({
+        type: "success",
+        title: "Request Submitted",
+        message: `Your appointment request has been submitted successfully (it is not confirmed yet). You will receive an email or text notification once the doctor accepts the request.${isFollowUpAppt ? " This request has been identified as a follow-up consultation." : ""}`
+      });
       resetForm();
       setSelectedTime("");
       setShowSheet(false);

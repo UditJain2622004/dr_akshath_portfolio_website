@@ -16,17 +16,16 @@ export default function HistoryPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [stats, setStats] = useState({ total: 0 });
 
-  const fetchBookings = useCallback(async (isLoadMore = false) => {
+  const fetchBookings = useCallback(async (isLoadMore = false, explicitLastId = null) => {
     if (isLoadMore) setLoadingMore(true);
     else setLoading(true);
 
     try {
-      const lastId = isLoadMore && bookings.length > 0 ? bookings[bookings.length - 1].id : null;
       const res = await getBookings(token, {
         status: 'completed,cancelled,rejected',
         clinicId: selectedClinic || undefined,
         limit: 20,
-        lastId
+        lastId: isLoadMore ? explicitLastId : null
       });
 
       if (isLoadMore) {
@@ -42,7 +41,7 @@ export default function HistoryPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [token, selectedClinic, bookings.length]);
+  }, [token, selectedClinic]);
 
   useEffect(() => {
     if (!token) return;
@@ -52,7 +51,7 @@ export default function HistoryPage() {
   useEffect(() => {
     if (!token) return;
     fetchBookings();
-  }, [token, selectedClinic]);
+  }, [token, selectedClinic, fetchBookings]);
 
   return (
     <div className="flex flex-col">
@@ -115,7 +114,7 @@ export default function HistoryPage() {
         {hasMore && (
           <div className="flex justify-center mt-6">
             <button
-              onClick={() => fetchBookings(true)}
+              onClick={() => fetchBookings(true, bookings.length > 0 ? bookings[bookings.length - 1].id : null)}
               disabled={loadingMore}
               className="px-6 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-2"
               style={{

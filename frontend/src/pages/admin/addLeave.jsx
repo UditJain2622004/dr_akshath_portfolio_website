@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
 import { getClinics, getLeaves, createLeave, deleteLeave } from '../../services/adminApi';
@@ -26,7 +26,7 @@ export default function AddLeavePage({ setPage }) {
     clinicId: '',
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [cl, lv] = await Promise.all([
@@ -40,12 +40,12 @@ export default function AddLeavePage({ setPage }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
     fetchData();
-  }, [token]);
+  }, [token, fetchData]);
 
   const update = (key, value) => {
     setForm(f => ({ ...f, [key]: value }));
