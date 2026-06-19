@@ -22,11 +22,24 @@ function endOfDayIST(dateStr) {
 }
 
 /**
- * Get current IST time as HH:mm string.
+ * Get current IST date and time without relying on server timezone.
  */
-function currentISTTime() {
-  const nowIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour12: false });
-  return nowIST.split(', ')[1].split(':').slice(0, 2).join(':');
+function currentISTDateTime() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    minutes: Number(values.hour) * 60 + Number(values.minute),
+  };
 }
 
 function toMinutes(hhmm) {
@@ -40,24 +53,34 @@ function toMinutes(hhmm) {
 
 /**
  * Fetch upcoming appointments for a clinic on a date (status in ACTIVE_STATUSES,
- * timeSlot >= current IST time).
+ * excluding past dates; for today, timeSlot >= current IST time).
  */
 async function getUpcomingAppointments(clinicId, date) {
+  const nowIST = currentISTDateTime();
+  if (date < nowIST.date) return [];
+
   const snapshot = await db.collection('appointments')
     .where('clinicId', '==', clinicId)
     .where('appointmentDate', '==', date)
     .where('status', 'in', ACTIVE_STATUSES)
     .get();
 
-  const now = currentISTTime();
-  const nowMinutes = toMinutes(now);
   return snapshot.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
     .filter(a => {
+      if (date > nowIST.date) return true;
       const slotMinutes = toMinutes(a.timeSlot);
-      if (slotMinutes == null || nowMinutes == null) return false;
-      return slotMinutes >= nowMinutes;
+      if (slotMinutes == null) return false;
+      return slotMinutes >= nowIST.minutes;
     });
+}
+
+function isPastISTDate(date) {
+  return date < currentISTDateTime().date;
+}
+
+function effectiveDelayMinutes(appointment, clinicDelayMinutes) {
+  return Math.max(appointment.delayMinutes || 0, clinicDelayMinutes || 0);
 }
 
 export default async function handler(req, res) {
@@ -121,8 +144,9 @@ async function handlePost(req, res) {
 
   if (!clinicId) return sendError(res, 400, 'Missing required field: clinicId');
   if (!date || !isValidDate(date)) return sendError(res, 400, 'Valid date (YYYY-MM-DD) is required');
-  if (delayMinutes == null || typeof delayMinutes !== 'number' || delayMinutes < 1) {
-    return sendError(res, 400, 'delayMinutes must be a positive number');
+  if (isPastISTDate(date)) return sendError(res, 400, 'Cannot set delay for a past date');
+  if (!Number.isInteger(delayMinutes) || delayMinutes < 1) {
+    return sendError(res, 400, 'delayMinutes must be a positive integer');
   }
   if (delayMinutes > 180) {
     return sendError(res, 400, 'delayMinutes cannot exceed 180');
@@ -153,17 +177,16 @@ async function handlePost(req, res) {
         : { createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }),
     }, { merge: true });
 
-    // Notify upcoming patients (skip if delay amount hasn't changed)
+    // Notify upcoming patients only when their effective delay changes.
     let notifiedCount = 0;
     if (previousMinutes !== delayMinutes) {
       const upcoming = await getUpcomingAppointments(clinicId, date);
       const clinicName = clinicDoc.data().name || clinicId;
 
       const notifications = upcoming
-        // Skip patients that have a per-appointment override (they get their own notifications)
-        .filter(a => a.delayMinutes == null)
+        .filter(a => effectiveDelayMinutes(a, previousMinutes) !== effectiveDelayMinutes(a, delayMinutes))
         .map(a =>
-          sendDelayNotification('booking_delayed', a, delayMinutes, clinicName)
+          sendDelayNotification('booking_delayed', a, effectiveDelayMinutes(a, delayMinutes), clinicName)
             .then(() => 1)
             .catch(err => {
               console.error(`[Delay] Notification failed for ${a.id}:`, err.message);
@@ -202,6 +225,7 @@ async function handleDelete(req, res) {
 
   if (!clinicId) return sendError(res, 400, 'Missing required param: clinicId');
   if (!date || !isValidDate(date)) return sendError(res, 400, 'Valid date (YYYY-MM-DD) is required');
+  if (isPastISTDate(date)) return sendError(res, 400, 'Cannot clear delay for a past date');
 
   try {
     const docId = delayDocId(clinicId, date);
@@ -211,6 +235,8 @@ async function handleDelete(req, res) {
     if (!delayDoc.exists) {
       return sendError(res, 404, 'No active delay found for this clinic and date');
     }
+
+    const previousMinutes = delayDoc.data().delayMinutes || 0;
 
     await delayRef.delete();
 
@@ -222,21 +248,23 @@ async function handleDelete(req, res) {
     let notifiedCount = 0;
 
     const notifications = upcoming
-      .filter(a => a.delayMinutes == null) // Only notify those without per-appointment override
-      .map(a =>
-        sendDelayNotification('booking_back_on_schedule', a, 0, clinicName)
+      .filter(a => effectiveDelayMinutes(a, previousMinutes) !== effectiveDelayMinutes(a, 0))
+      .map(a => {
+        const newEffectiveDelay = effectiveDelayMinutes(a, 0);
+        const event = newEffectiveDelay > 0 ? 'booking_delayed' : 'booking_back_on_schedule';
+        return sendDelayNotification(event, a, newEffectiveDelay, clinicName)
           .then(() => 1)
           .catch(err => {
-            console.error(`[Delay] Back-on-schedule notification failed for ${a.id}:`, err.message);
+            console.error(`[Delay] Clear notification failed for ${a.id}:`, err.message);
             return 0;
-          })
-      );
+          });
+      });
 
     const results = await Promise.all(notifications);
     notifiedCount = results.reduce((sum, v) => sum + v, 0);
 
     return sendSuccess(res, {
-      message: `Delay cleared. ${notifiedCount} patient(s) notified that doctor is back on schedule.`,
+      message: `Delay cleared. ${notifiedCount} patient(s) notified.`,
       notifiedCount,
     });
   } catch (error) {

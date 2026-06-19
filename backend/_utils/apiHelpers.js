@@ -35,8 +35,11 @@ export function validateRequired(body, fields) {
  */
 export function isValidDate(dateStr) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-  const date = new Date(dateStr + 'T00:00:00');
-  return !isNaN(date.getTime());
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
 }
 
 /**

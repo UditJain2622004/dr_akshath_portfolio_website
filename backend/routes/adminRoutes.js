@@ -7,13 +7,11 @@ import profileController from "../controllers/admin/profileController.js";
 import slotsController from "../controllers/admin/slotsController.js";
 import scheduleController from "../controllers/admin/scheduleController.js";
 import dashboardController from "../controllers/admin/dashboardController.js";
-import delayController from "../controllers/admin/delayController.js";
 
 const adminRoutes = Router();
 
 adminRoutes.all('/admin/bookings', bookingsController);
 adminRoutes.all('/admin/clinics', clinicsController);
-adminRoutes.all('/admin/delay', delayController);
 adminRoutes.all('/admin/leaves', leavesController);
 adminRoutes.all('/admin/me', meController);
 adminRoutes.all('/admin/profile', profileController);

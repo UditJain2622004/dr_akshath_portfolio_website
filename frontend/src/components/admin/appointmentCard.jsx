@@ -19,7 +19,7 @@ function getClinicColor(clinics = [], clinicId) {
   return idx >= 0 ? CLINIC_COLORS[idx % CLINIC_COLORS.length] : '#9ca3af';
 }
 
-export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], showClinicBadge = false, onAction, onDelay, activeClinicDelay = null }) {
+export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], showClinicBadge = false, onAction, onDelay }) {
   const [confirming, setConfirming] = useState(null); // 'complete' | 'cancel'
   const [showDelayModal, setShowDelayModal] = useState(false);
   const s = STATUS_CONFIG[appt.status] || STATUS_CONFIG.upcoming;
@@ -52,8 +52,8 @@ export default function ScheduleCard({ appt, expanded, onToggle, clinics = [], s
     return {};
   };
 
-  // Resolve effective delay: use the larger of per-appointment vs clinic-level
-  const effectiveDelay = Math.max(appt.delayMinutes || 0, activeClinicDelay || 0) || null;
+  // Use the per-appointment delay directly
+  const effectiveDelay = appt.delayMinutes || null;
 
   // Compute estimated delayed time
   const addMinutes = (timeStr, mins) => {

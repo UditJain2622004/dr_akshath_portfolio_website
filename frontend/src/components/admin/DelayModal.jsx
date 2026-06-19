@@ -4,20 +4,13 @@ import { T, I } from './theme';
 const PRESETS = [10, 15, 20, 30, 45, 60];
 
 /**
- * DelayModal — used in two modes:
- *
- * 1. Clinic-level: sets a delay for all upcoming appointments at a clinic today.
- *    Props: mode="clinic", clinicName, currentDelay
- *
- * 2. Per-appointment: overrides the delay for a single appointment.
- *    Props: mode="appointment", patientName, currentDelay
+ * DelayModal — sets a delay for a single appointment.
+ * Props: patientName, currentDelay
  */
 export default function DelayModal({
   isOpen,
   onClose,
   onConfirm,
-  mode = 'appointment',   // 'clinic' | 'appointment'
-  clinicName = '',
   patientName = '',
   currentDelay = null,    // Currently active delay minutes (null = none)
 }) {
@@ -30,13 +23,8 @@ export default function DelayModal({
   const effectiveMinutes = useCustom ? parseInt(custom, 10) : selected;
   const isValid = effectiveMinutes && effectiveMinutes > 0 && effectiveMinutes <= 180;
 
-  const title = mode === 'clinic'
-    ? `Running Late at ${clinicName}?`
-    : `Delay ${patientName}'s Appointment`;
-
-  const subtitle = mode === 'clinic'
-    ? 'All upcoming patients at this clinic today will be notified.'
-    : 'Only this patient will be notified about the delay.';
+  const title = `Delay ${patientName}'s Appointment`;
+  const subtitle = 'Only this patient will see the updated time.';
 
   const handleConfirm = () => {
     if (!isValid) return;
@@ -137,9 +125,7 @@ export default function DelayModal({
                 fontFamily: 'Outfit',
               }}
             >
-              {mode === 'clinic'
-                ? `Notify All Patients — ${effectiveMinutes || '?'} min delay`
-                : `Set ${effectiveMinutes || '?'} min delay`}
+              {`Set ${effectiveMinutes || '?'} min delay`}
             </button>
 
             {currentDelay && (
@@ -148,7 +134,7 @@ export default function DelayModal({
                 className="w-full py-3 rounded-2xl font-bold text-sm transition-all hover:bg-green-50"
                 style={{ color: '#16a34a', border: '1.5px solid #bbf7d0', fontFamily: 'Outfit' }}
               >
-                {mode === 'clinic' ? '✓ Clear Delay — Back on Schedule' : '✓ Clear Delay'}
+                ✓ Clear Delay
               </button>
             )}
 

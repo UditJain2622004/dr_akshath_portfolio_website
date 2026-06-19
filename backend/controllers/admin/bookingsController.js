@@ -4,7 +4,6 @@ import { sendError, sendSuccess, validateRequired, isValidDate, isValidTime } fr
 import { generateSlotTimes, buildSlotId, classifyBookingDate, parseTime } from '../../_utils/slotGenerator.js';
 import { normalizePhone } from '../../_utils/phoneUtils.js';
 import { checkDoctorLeave } from '../../_utils/leaveChecker.js';
-import { sendDelayNotification } from '../../_utils/brevoNotifications.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
@@ -359,18 +358,6 @@ async function handlePatch(req, res) {
 
     await appointmentRef.update(updateData);
 
-    // Send per-appointment delay notification
-    if (
-      delayMinutes !== undefined &&
-      delayMinutes !== null &&
-      delayMinutes > 0 &&
-      DELAY_ALLOWED_STATUSES.includes(appointment.status)
-    ) {
-      const clinicDoc = await db.collection('clinics').doc(appointment.clinicId).get();
-      const clinicName = clinicDoc.exists ? clinicDoc.data().name : appointment.clinicId;
-      sendDelayNotification('booking_delayed', { ...appointment, id: appointmentId }, delayMinutes, clinicName)
-        .catch(err => console.error('[Delay] Per-appointment notification failed:', err.message));
-    }
 
     return sendSuccess(res, {
       appointmentId,
