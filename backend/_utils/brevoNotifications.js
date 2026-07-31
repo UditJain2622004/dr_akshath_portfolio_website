@@ -8,10 +8,10 @@ const DOCTOR_NAME = "Dr. Akshath Ramesh Acharya";
 const DOCTOR_SHORT = "Dr. Akshath";
 const SUCCESS_COLOR = "#2d9a5c";     // Green for confirmations
 const DANGER_COLOR = "#e5533d";      // Red for rejections
-const CONTACT_PHONE = "+91 99999 99999"; // TODO: Update with real phone
+const CONTACT_PHONE = "+91 95381 07758"; // TODO: Update with real phone
 
 // Only these events trigger email + SMS notifications
-const NOTIFY_EVENTS = new Set(["booking_confirmed", "booking_rejected"]);
+const NOTIFY_EVENTS = new Set(["booking_confirmed", "booking_rejected", "booking_cancelled"]);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -170,6 +170,25 @@ function buildEmailHtml(event, payload, doctorName, clinicMeta) {
     `);
   }
 
+  if (event === "booking_cancelled") {
+    return emailWrapper(DANGER_COLOR, "Appointment Cancellation", `
+      <p style="font-size: 16px; color: #222;">Hello <strong>${patientName}</strong>,</p>
+      <p style="font-size: 15px; color: #555; line-height: 1.6;">
+        We regret to inform you that your <strong>confirmed</strong> appointment has been
+        <strong style="color: ${DANGER_COLOR};">cancelled</strong>. Here are the details of the affected appointment:
+      </p>
+      ${detailsCard(appointmentDetails, "#fff5f5", "#f5c2c0")}
+      <div style="background: #fdecea; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid ${DANGER_COLOR};">
+        <p style="margin: 0; font-size: 13px; color: #c62828;">
+          📞 Please contact us at <strong>${CONTACT_PHONE}</strong> to reschedule your appointment at your earliest convenience.
+        </p>
+      </div>
+      <p style="margin-top: 24px; font-size: 14px; color: #444;">
+        We sincerely apologize for the inconvenience,<br><strong>${DOCTOR_SHORT}'s Team</strong>
+      </p>
+    `);
+  }
+
   // booking_rejected
   return emailWrapper(DANGER_COLOR, "Appointment Update", `
     <p style="font-size: 16px; color: #222;">Hello <strong>${patientName}</strong>,</p>
@@ -201,6 +220,10 @@ function buildSmsContent(event, payload, clinicMeta) {
     return `Dear ${patientName}, Your appointment with ${DOCTOR_NAME} at ${clinicMeta.clinicName} is confirmed for ${date} at ${time}. Please arrive 10 min early. Contact: ${CONTACT_PHONE}.`;
   }
 
+  if (event === "booking_cancelled") {
+    return `Dear ${patientName}, Your confirmed appointment with ${DOCTOR_NAME} at ${clinicMeta.clinicName} on ${date} at ${time} has been cancelled. We apologise for the inconvenience. Please call ${CONTACT_PHONE} to reschedule.`;
+  }
+
   // booking_rejected
   return `Dear ${patientName}, Your appointment request with ${DOCTOR_NAME} on ${date} at ${time} could not be confirmed. Please try booking a different slot. Contact: ${CONTACT_PHONE}.`;
 }
@@ -226,9 +249,12 @@ async function sendEmail(event, payload, doctorName, clinicMeta) {
   const patientEmail = payload.patientEmail;
   if (!patientEmail) return;
 
-  const subject = event === "booking_confirmed"
-    ? `Appointment Confirmed – ${DOCTOR_SHORT}`
-    : `Appointment Update – ${DOCTOR_SHORT}`;
+  const subject =
+    event === "booking_confirmed"
+      ? `Appointment Confirmed – ${DOCTOR_SHORT}`
+      : event === "booking_cancelled"
+      ? `Appointment Cancelled – ${DOCTOR_SHORT}`
+      : `Appointment Update – ${DOCTOR_SHORT}`;
 
   await brevoRequest("smtp/email", {
     sender: {

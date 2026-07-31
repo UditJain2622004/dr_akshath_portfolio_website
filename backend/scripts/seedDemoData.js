@@ -14,7 +14,7 @@ import { getAuth } from 'firebase-admin/auth';
 import fs from "fs";
 
 const serviceAccount = JSON.parse(
-  fs.readFileSync(new URL("../serviceAccountKey.json", import.meta.url))
+  fs.readFileSync(new URL("../drAkshathPortfolioServiceAccountKey.json", import.meta.url))
 );
 // ── Init ───────────────────────────────────────────────────────────────────────
 const app = initializeApp({

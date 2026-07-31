@@ -14,7 +14,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const keyPath = resolve(__dirname, '../serviceAccountKey.json');
+const keyPath = resolve(__dirname, '../drAkshathPortfolioServiceAccountKey.json');
 const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'));
 const app = initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore(app);
@@ -23,15 +23,15 @@ const DATE = '2026-05-01';
 
 const BOOKINGS = [
   // Vijay Polyclinic — morning 07:20
-  { clinicId: 'vijay_polyclinic', time: '07:20', name: 'Ramesh Kumar',    phone: '+919000000001' },
+  { clinicId: 'vijay_polyclinic', time: '07:20', name: 'Ramesh Kumar', phone: '+919000000001' },
   // Ishaanvi — morning 08:00  (40 min after Vijay 07:20 → OK, but blocks Vijay/Nexus 07:30-08:30)
   { clinicId: 'ishaanvi_polyclinic', time: '08:00', name: 'Priya Sharma', phone: '+919000000002' },
   // Nexus — evening 18:30
-  { clinicId: 'nexus_enliven', time: '18:30', name: 'Suresh Nayak',       phone: '+919000000003' },
+  { clinicId: 'nexus_enliven', time: '18:30', name: 'Suresh Nayak', phone: '+919000000003' },
   // Vijay — evening 19:20  (50 min after Nexus 18:30 → OK, but blocks Ishaanvi/Nexus 18:50-19:50)
-  { clinicId: 'vijay_polyclinic', time: '19:20', name: 'Lakshmi Devi',    phone: '+919000000004' },
+  { clinicId: 'vijay_polyclinic', time: '19:20', name: 'Lakshmi Devi', phone: '+919000000004' },
   // Ishaanvi — evening 20:30
-  { clinicId: 'ishaanvi_polyclinic', time: '20:30', name: 'Anil Rao',     phone: '+919000000005' },
+  { clinicId: 'ishaanvi_polyclinic', time: '20:30', name: 'Anil Rao', phone: '+919000000005' },
 ];
 
 async function run() {

@@ -7,7 +7,7 @@
  * Usage (from backend/):
  *   node scripts/deleteAllAppointments.js --confirm
  *
- * Requires backend/serviceAccountKey.json (same as other seed scripts).
+ * Requires backend/drAkshathPortfolioServiceAccountKey.json (same as other seed scripts).
  */
 
 import { initializeApp, cert } from 'firebase-admin/app';
@@ -24,7 +24,7 @@ if (!process.argv.includes('--confirm')) {
   process.exit(1);
 }
 
-const keyPath = resolve(__dirname, '../serviceAccountKey.json');
+const keyPath = resolve(__dirname, '../drAkshathPortfolioServiceAccountKey.json');
 const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'));
 const app = initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore(app);
@@ -34,7 +34,7 @@ const BATCH_SIZE = 400;
 async function deleteInBatches(collectionId) {
   const col = db.collection(collectionId);
   let total = 0;
-  for (;;) {
+  for (; ;) {
     const snap = await col.limit(BATCH_SIZE).get();
     if (snap.empty) break;
     const batch = db.batch();

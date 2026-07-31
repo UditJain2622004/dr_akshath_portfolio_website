@@ -48,7 +48,7 @@ function getAdminApp() {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
     ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
     : null;
-  const keyPath = resolve(__dirname, '../serviceAccountKey.json');
+  const keyPath = resolve(__dirname, '../drAkshathPortfolioServiceAccountKey.json');
   const pid = resolvedProjectId();
   const managed = isManagedRuntime();
 
@@ -68,9 +68,9 @@ function getAdminApp() {
     return _app;
   }
 
-  // 2. Local dev: optional serviceAccountKey.json
+  // 2. Local dev: optional drAkshathPortfolioServiceAccountKey.json
   if (existsSync(keyPath)) {
-    console.log('Firebase: Initializing via local serviceAccountKey.json');
+    console.log('Firebase: Initializing via local drAkshathPortfolioServiceAccountKey.json');
     const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'));
     _app = initializeApp({ credential: cert(serviceAccount) });
     return _app;
@@ -96,7 +96,7 @@ function getAdminApp() {
   }
 
   throw new Error(
-    'Firebase Admin credentials are missing. Place serviceAccountKey.json in the backend root or set appropriate environment variables.',
+    'Firebase Admin credentials are missing. Place drAkshathPortfolioServiceAccountKey.json in the backend root or set appropriate environment variables.',
   );
 }
 

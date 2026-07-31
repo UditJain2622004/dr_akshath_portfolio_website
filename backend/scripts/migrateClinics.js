@@ -6,7 +6,7 @@
  * Usage:  node --experimental-vm-modules scripts/migrateClinics.js
  *   (or)  node scripts/migrateClinics.js
  * 
- * Requires: serviceAccountKey.json in the backend root
+ * Requires: drAkshathPortfolioServiceAccountKey.json in the backend root
  */
 
 import { initializeApp, cert } from 'firebase-admin/app';
@@ -16,7 +16,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const keyPath = resolve(__dirname, '../serviceAccountKey.json');
+const keyPath = resolve(__dirname, '../drAkshathPortfolioServiceAccountKey.json');
 const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'));
 
 const app = initializeApp({ credential: cert(serviceAccount) });

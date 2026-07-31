@@ -42,7 +42,13 @@ function watchAppointmentsForNotifications() {
               cancelled: "booking_cancelled",
               completed: "booking_completed",
             };
-            const notificationEvent = statusToEventMap[data.status];
+            let notificationEvent = statusToEventMap[data.status];
+
+            // Only notify on cancellation if the appointment was already confirmed
+            if (data.status === "cancelled" && before.status !== "confirmed") {
+              notificationEvent = null;
+            }
+
             if (notificationEvent) {
               sendBookingNotification(notificationEvent, data).catch((err) => {
                 console.error("[Notification] Booking status notification failed:", err.message);

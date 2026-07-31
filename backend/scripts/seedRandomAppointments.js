@@ -24,7 +24,7 @@ import { fileURLToPath } from 'url';
 import { classifyBookingDate } from '../_utils/slotGenerator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const keyPath = resolve(__dirname, '../serviceAccountKey.json');
+const keyPath = resolve(__dirname, '../drAkshathPortfolioServiceAccountKey.json');
 const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf8'));
 const app = initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore(app);
