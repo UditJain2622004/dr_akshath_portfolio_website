@@ -16,6 +16,7 @@ function isInBreak(slotStart, slotDuration, breakTimes) {
 
   const slotEnd = slotStart + slotDuration;
   return breakTimes.some((brk) => {
+    if (!brk || !brk.start || !brk.end) return false;
     const breakStart = parseTime(brk.start);
     const breakEnd = parseTime(brk.end);
     return slotStart < breakEnd && slotEnd > breakStart;
@@ -23,8 +24,13 @@ function isInBreak(slotStart, slotDuration, breakTimes) {
 }
 
 export function generateSlotTimesForSchedule(weeklySchedule, breakTimes, dateStr) {
-  const date = new Date(dateStr + 'T00:00:00');
-  const dayOfWeek = date.getDay();
+  // Use IST-aware day-of-week to avoid timezone issues on UTC servers
+  const istDayOfWeek = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+  }).format(new Date(dateStr + 'T12:00:00+05:30'));
+  const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const dayOfWeek = dayMap[istDayOfWeek];
 
   if (!weeklySchedule) return [];
   const daySchedule = weeklySchedule[String(dayOfWeek)];
@@ -59,18 +65,18 @@ export function buildSlotId(clinicId, date, time) {
 }
 
 export function classifyBookingDate(dateStr) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use IST date strings for comparison to avoid UTC offset issues
+  const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const targetDate = dateStr; // already YYYY-MM-DD
 
-  const target = new Date(dateStr + 'T00:00:00');
-  target.setHours(0, 0, 0, 0);
-
-  const diffMs = target.getTime() - today.getTime();
-  const daysDiff = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (daysDiff < 0) {
-    return { isInstant: false, isRequest: false, isOutOfRange: true, daysDiff };
+  if (targetDate < todayIST) {
+    return { isInstant: false, isRequest: false, isOutOfRange: true, daysDiff: -1 };
   }
+
+  // Calculate daysDiff using date string math (avoids timezone pitfalls)
+  const todayMs = new Date(todayIST + 'T00:00:00+05:30').getTime();
+  const targetMs = new Date(targetDate + 'T00:00:00+05:30').getTime();
+  const daysDiff = Math.round((targetMs - todayMs) / (1000 * 60 * 60 * 24));
 
   if (daysDiff <= 20) {
     return { isInstant: true, isRequest: false, isOutOfRange: false, daysDiff };

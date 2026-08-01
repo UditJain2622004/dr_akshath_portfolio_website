@@ -8,10 +8,19 @@ export default async function handler(req, res) {
 
   try {
     const snapshot = await db.collection('clinics').where('isActive', '==', true).get();
-    const clinics = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const clinics = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        address: data.address || null,
+        specialty: data.specialty || null,
+        displayOrder: data.displayOrder ?? 9999,
+        weeklySchedule: data.weeklySchedule || null,
+        breakTimes: data.breakTimes || null,
+        appointmentOnly: data.appointmentOnly || false,
+      };
+    });
 
     clinics.sort((a, b) => {
       const orderDiff = (a.displayOrder ?? 9999) - (b.displayOrder ?? 9999);

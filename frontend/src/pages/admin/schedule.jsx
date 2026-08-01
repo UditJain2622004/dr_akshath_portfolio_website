@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { T, I } from '../../components/admin/theme';
 import { useAuth } from '../../context/AuthContext';
@@ -18,16 +18,6 @@ const STATUS_FILTERS = [
   { id: 'all', label: 'All', activeBg: T.teal },
 ];
 
-function toYMD(date) {
-  return toLocalDateStr(date);
-}
-
-function offsetDate(base, days) {
-  const d = new Date(base);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
 export default function SchedulePage() {
   const { token } = useAuth();
   const [searchParams] = useSearchParams();
@@ -38,17 +28,28 @@ export default function SchedulePage() {
 
   const [selectedClinic, setSelectedClinic] = useState(null); // null = all
   const [statusFilter, setStatusFilter] = useState('confirmed');
-  const [dateOffset, setDateOffset] = useState(0);
+  const [selectedDateStr, setSelectedDateStr] = useState(() => toLocalDateStr());
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState(null);
 
+  const dateInputRef = useRef(null);
 
-  const today = new Date();
-  const currentDate = offsetDate(today, dateOffset);
-  const dateStr = toYMD(currentDate);
-  const isToday = dateOffset === 0;
+  const todayStr = toLocalDateStr();
+  const dateStr = selectedDateStr;
+  const currentDate = new Date(selectedDateStr + 'T00:00:00');
+  const isToday = selectedDateStr === todayStr;
   const displayDate = isToday ? 'Today' : currentDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
   const fullDate = currentDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const openDatePicker = () => {
+    if (dateInputRef.current) {
+      if (dateInputRef.current.showPicker) {
+        dateInputRef.current.showPicker();
+      } else {
+        dateInputRef.current.click();
+      }
+    }
+  };
 
   useEffect(() => {
     const status = searchParams.get('status');
@@ -87,7 +88,8 @@ export default function SchedulePage() {
   // Client-side status + search filter
   const filtered = useMemo(() => {
     return appointments.filter(a => {
-      const matchStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchStatus = statusFilter === 'all'
+        || (statusFilter === 'cancelled' ? ['cancelled', 'rejected'].includes(a.status) : a.status === statusFilter);
       const q = search.toLowerCase();
       const matchSearch = !q || (a.patientName || '').toLowerCase().includes(q);
       return matchStatus && matchSearch;
@@ -154,27 +156,71 @@ export default function SchedulePage() {
       <div className="sticky top-0 z-10" style={{ background: T.white, borderBottom: `1px solid ${T.mint}` }}>
         {/* Date nav */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
-          <button onClick={() => setDateOffset(d => Math.max(0, d - 1))}
-            disabled={isToday}
-            className="w-8 h-8 rounded-xl flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-35"
+          <button onClick={() => {
+            const prev = new Date(currentDate);
+            prev.setDate(prev.getDate() - 1);
+            setSelectedDateStr(toLocalDateStr(prev));
+          }}
+            aria-label="Previous day"
+            title="Previous day"
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-slate-100"
             style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.navy }}>
             <I n="chevL" s={16} />
           </button>
-          <div className="text-center">
-            <p className="font-bold" style={{ color: T.navy, fontFamily: 'Outfit', fontSize: 14 }}>{displayDate}</p>
+
+          <div className="relative text-center cursor-pointer group px-3 py-1 rounded-xl hover:bg-slate-50 transition-all"
+            onClick={openDatePicker}
+            title="Click to pick a date">
+            <div className="flex items-center justify-center gap-1.5">
+              <p className="font-bold text-sm" style={{ color: T.navy, fontFamily: 'Outfit' }}>{displayDate}</p>
+              <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
+                <I n="calendar" s={14} />
+              </span>
+            </div>
             <p className="text-[10px]" style={{ color: '#9ca3af', fontFamily: 'Outfit' }}>{fullDate}</p>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={selectedDateStr}
+              onChange={(e) => {
+                if (e.target.value) setSelectedDateStr(e.target.value);
+              }}
+              className="absolute inset-0 opacity-0 cursor-pointer pointer-events-none"
+            />
           </div>
+
           <div className="flex items-center gap-2">
+            {!isToday && (
+              <button onClick={() => setSelectedDateStr(todayStr)}
+                className="px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all hover:bg-teal-50"
+                style={{ background: T.hero, color: T.teal, border: `1px solid ${T.mint}`, fontFamily: 'Outfit' }}
+                title="Jump to Today">
+                Today
+              </button>
+            )}
+            <button onClick={openDatePicker}
+              aria-label="Pick date"
+              title="Pick date"
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-slate-100"
+              style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.teal, fontFamily: 'Outfit' }}>
+              <I n="calendar" s={15} />
+            </button>
             <button onClick={fetchSchedule}
               disabled={loading}
               aria-label="Refresh schedule"
               title="Refresh schedule"
-              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-60"
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-60 hover:bg-slate-100"
               style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.teal, fontFamily: 'Outfit' }}>
               <span className={loading ? 'animate-spin' : ''}><I n="refresh" s={15} /></span>
             </button>
-            <button onClick={() => setDateOffset(d => d + 1)}
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
+            <button onClick={() => {
+              const next = new Date(currentDate);
+              next.setDate(next.getDate() + 1);
+              setSelectedDateStr(toLocalDateStr(next));
+            }}
+              aria-label="Next day"
+              title="Next day"
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:bg-slate-100"
               style={{ background: T.mintFaint, border: `1px solid ${T.mint}`, color: T.navy }}>
               <I n="chevR" s={16} />
             </button>

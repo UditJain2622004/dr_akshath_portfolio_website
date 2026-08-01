@@ -1,7 +1,6 @@
 import { db } from '../../_utils/firebaseAdmin.js';
 import { verifyAuth } from '../../_utils/authMiddleware.js';
 import { sendError, sendSuccess, isValidDate } from '../../_utils/apiHelpers.js';
-import { sendDelayNotification } from '../../_utils/brevoNotifications.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed'];
@@ -177,26 +176,9 @@ async function handlePost(req, res) {
         : { createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }),
     }, { merge: true });
 
-    // Notify upcoming patients only when their effective delay changes.
-    let notifiedCount = 0;
-    if (previousMinutes !== delayMinutes) {
-      const upcoming = await getUpcomingAppointments(clinicId, date);
-      const clinicName = clinicDoc.data().name || clinicId;
-
-      const notifications = upcoming
-        .filter(a => effectiveDelayMinutes(a, previousMinutes) !== effectiveDelayMinutes(a, delayMinutes))
-        .map(a =>
-          sendDelayNotification('booking_delayed', a, effectiveDelayMinutes(a, delayMinutes), clinicName)
-            .then(() => 1)
-            .catch(err => {
-              console.error(`[Delay] Notification failed for ${a.id}:`, err.message);
-              return 0;
-            })
-        );
-
-      const results = await Promise.all(notifications);
-      notifiedCount = results.reduce((sum, v) => sum + v, 0);
-    }
+    // TODO: Add patient notification support here in the future.
+    // When enabled, notify upcoming patients when their effective delay changes.
+    const notifiedCount = 0;
 
     return sendSuccess(res, {
       delayId: docId,
@@ -240,28 +222,9 @@ async function handleDelete(req, res) {
 
     await delayRef.delete();
 
-    // Notify patients that doctor is back on schedule
-    const clinicDoc = await db.collection('clinics').doc(clinicId).get();
-    const clinicName = clinicDoc.exists ? clinicDoc.data().name : clinicId;
-
-    const upcoming = await getUpcomingAppointments(clinicId, date);
-    let notifiedCount = 0;
-
-    const notifications = upcoming
-      .filter(a => effectiveDelayMinutes(a, previousMinutes) !== effectiveDelayMinutes(a, 0))
-      .map(a => {
-        const newEffectiveDelay = effectiveDelayMinutes(a, 0);
-        const event = newEffectiveDelay > 0 ? 'booking_delayed' : 'booking_back_on_schedule';
-        return sendDelayNotification(event, a, newEffectiveDelay, clinicName)
-          .then(() => 1)
-          .catch(err => {
-            console.error(`[Delay] Clear notification failed for ${a.id}:`, err.message);
-            return 0;
-          });
-      });
-
-    const results = await Promise.all(notifications);
-    notifiedCount = results.reduce((sum, v) => sum + v, 0);
+    // TODO: Add patient notification support here in the future.
+    // When enabled, notify patients that doctor is back on schedule.
+    const notifiedCount = 0;
 
     return sendSuccess(res, {
       message: `Delay cleared. ${notifiedCount} patient(s) notified.`,

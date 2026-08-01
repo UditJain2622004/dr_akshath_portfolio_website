@@ -44,7 +44,8 @@ async function handleGet(req, res) {
     const appointmentsByTime = {};
     appointmentsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
-      appointmentsByTime[data.timeSlot] = { id: doc.id, ...data };
+      if (!appointmentsByTime[data.timeSlot]) appointmentsByTime[data.timeSlot] = [];
+      appointmentsByTime[data.timeSlot].push({ id: doc.id, ...data });
     });
 
     let slotQuery = db.collection('doctorSlots').where('date', '==', date);
@@ -65,24 +66,29 @@ async function handleGet(req, res) {
       const slotTimes = leaveStatus.onLeave ? [] : generateSlotTimes(clinic, date);
 
       const slots = slotTimes.map((time) => {
-        const appointment = appointmentsByTime[time];
+        const apptsAtTime = appointmentsByTime[time] || [];
+        const apptsAtClinic = apptsAtTime.filter(a => a.clinicId === clinic.id);
+        const appointment = apptsAtClinic[0] || null;
         const manual = manualByClinicTime[`${clinic.id}__${time}`];
 
         const isBlockedByLeave = leaveStatus.onLeave;
         const isBlockedManually = manual?.appointmentId === 'BLOCKED';
-        const isBookedByPatient = !!appointment;
+        const isBookedByPatient = apptsAtClinic.length > 0;
 
         // Travel Buffer check
         let travelConflict = null;
         if (!isBookedByPatient) {
           const slotMinutes = parseTime(time);
-          for (const [apptTime, appt] of Object.entries(appointmentsByTime)) {
-            if (appt.clinicId === clinic.id) continue;
+          for (const [apptTime, appts] of Object.entries(appointmentsByTime)) {
             const apptMinutes = parseTime(apptTime);
             const diff = Math.abs(slotMinutes - apptMinutes);
+            if (diff === 0) continue; // exact-time already handled by isBookedByPatient
             if (diff < CROSS_CLINIC_GAP) {
-              travelConflict = appt.clinicId;
-              break;
+              const crossClinicAppt = appts.find(a => a.clinicId !== clinic.id);
+              if (crossClinicAppt) {
+                travelConflict = crossClinicAppt.clinicId;
+                break;
+              }
             }
           }
         }

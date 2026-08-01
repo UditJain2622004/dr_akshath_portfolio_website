@@ -75,14 +75,30 @@ export default async function handler(req, res) {
       manualSlots[`${data.clinicId}__${data.time}`] = data;
     });
 
+function getISTNow() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return {
+    todayIST: `${values.year}-${values.month}-${values.day}`,
+    currentMinutes: Number(values.hour) * 60 + Number(values.minute),
+  };
+}
+
     // Current IST time (for filtering past slots on "today")
-    const nowISTStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour12: false });
-    const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-    const currentHHmm = nowISTStr.split(', ')[1].split(':').slice(0, 2).join(':');
+    const { todayIST, currentMinutes } = getISTNow();
 
     // ── MODE 2: Find clinics available at a specific time ──
     if (time) {
-      return await handleTimeQuery(res, { date, time, allClinics, appointmentsByTime, manualSlots, todayIST, currentHHmm, dateClass });
+      return await handleTimeQuery(res, { date, time, allClinics, appointmentsByTime, manualSlots, todayIST, currentMinutes, dateClass });
     }
 
     // ── MODE 1 / DEFAULT: Return slots per clinic ──
@@ -94,7 +110,7 @@ export default async function handler(req, res) {
       return sendError(res, 404, 'Clinic not found or inactive');
     }
 
-    return await handleClinicQuery(res, { date, targetClinics, allClinics, appointmentsByTime, manualSlots, todayIST, currentHHmm, dateClass });
+    return await handleClinicQuery(res, { date, targetClinics, allClinics, appointmentsByTime, manualSlots, todayIST, currentMinutes, dateClass });
 
   } catch (error) {
     console.error('Error in /api/slots:', error);
@@ -107,11 +123,9 @@ export default async function handler(req, res) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function handleClinicQuery(res, ctx) {
-  const { date, targetClinics, appointmentsByTime, manualSlots, todayIST, currentHHmm, dateClass } = ctx;
+  const { date, targetClinics, appointmentsByTime, manualSlots, todayIST, currentMinutes, dateClass } = ctx;
 
   const responseClinics = [];
-  const createBatch = db.batch();
-  let hasNewSlots = false;
 
   for (const clinic of targetClinics) {
     const leaveStatus = await checkDoctorLeave(clinic.id, date);
@@ -120,7 +134,7 @@ async function handleClinicQuery(res, ctx) {
 
     for (const time of slotTimes) {
       // Skip past slots for today
-      if (date === todayIST && time <= currentHHmm) continue;
+      if (date === todayIST && parseTime(time) <= currentMinutes) continue;
 
       const manual = manualSlots[`${clinic.id}__${time}`];
       const manuallyBlocked = manual?.appointmentId === 'BLOCKED';
@@ -152,10 +166,6 @@ async function handleClinicQuery(res, ctx) {
     });
   }
 
-  if (hasNewSlots) {
-    await createBatch.commit();
-  }
-
   return sendSuccess(res, {
     bookingType: dateClass.isInstant ? 'instant' : 'request',
     travelBufferMinutes: TRAVEL_BUFFER_MINUTES,
@@ -168,10 +178,10 @@ async function handleClinicQuery(res, ctx) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function handleTimeQuery(res, ctx) {
-  const { date, time, allClinics, appointmentsByTime, manualSlots, todayIST, currentHHmm, dateClass } = ctx;
+  const { date, time, allClinics, appointmentsByTime, manualSlots, todayIST, currentMinutes, dateClass } = ctx;
 
   // Skip if time is in the past
-  if (date === todayIST && time <= currentHHmm) {
+  if (date === todayIST && parseTime(time) <= currentMinutes) {
     return sendError(res, 400, 'Cannot check availability for a time that has already passed');
   }
 

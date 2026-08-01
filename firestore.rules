@@ -61,6 +61,14 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // delays — read-only for authenticated users (Admin SDK writes)
+    // ─────────────────────────────────────────────────────────────
+    match /delays/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // _health — internal backend health check (Admin SDK only)
     // ─────────────────────────────────────────────────────────────
     match /_health/{docId} {

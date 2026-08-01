@@ -63,19 +63,26 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
   const sheetRef = useRef(null);
 
   useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    if (open) {
+      document.body.style.overflow = "hidden";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFullName(""); setEmail(""); setPhone(""); setIsFollowup(false);
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsFollowup(false);
       return;
     }
     const digitsOnly = phone.replace(/\D/g, "");
     if (digitsOnly.length >= 10) {
-      checkFollowup(phone)
+      const dateStr = selectedDate ? toDateStr(selectedDate) : undefined;
+      checkFollowup(phone, dateStr)
         .then(res => {
           setIsFollowup(res.type === 'followup');
         })
@@ -85,7 +92,7 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
     } else {
       setIsFollowup(false);
     }
-  }, [phone, open]);
+  }, [phone, open, selectedDate]);
 
   const handleSubmit = () => {
     onSubmit({ fullName, email, phone }, () => {
@@ -169,6 +176,28 @@ function PatientSheet({ open, onClose, onSubmit, submitting, selectedDate, selec
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+function getISTDateAndMinutes() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+
+  const v = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const todayStr = `${v.year}-${v.month}-${v.day}`;
+  const currentMinutes = Number(v.hour) * 60 + Number(v.minute);
+  return { todayStr, currentMinutes };
+}
+
+function getISTToday() {
+  const { todayStr } = getISTDateAndMinutes();
+  return new Date(`${todayStr}T00:00:00+05:30`);
+}
+
 export default function Booking() {
   const ref = useReveal();
   const [mode, setMode] = useState("clinic");
@@ -178,7 +207,7 @@ export default function Booking() {
   const [showCalendar, setShowCalendar] = useState(false);
   const calRef = useRef(null);
 
-  const [selectedDate, setSelectedDate] = useState(() => norm(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => norm(getISTToday()));
   const [clinics, setClinics] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState(null);
   const [slots, setSlots] = useState([]);
@@ -189,7 +218,7 @@ export default function Booking() {
   const [submitting, setSubmitting] = useState(false);
   const [statusModal, setStatusModal] = useState(null);
 
-  const today = norm(new Date());
+  const today = useMemo(() => norm(getISTToday()), []);
   const quickDays = Array.from({ length: 5 }).map((_, i) => addDays(today, i));
   const dateStr = toDateStr(selectedDate);
 
@@ -223,9 +252,8 @@ export default function Booking() {
   useEffect(() => { fetchClinicsForTime(); }, [fetchClinicsForTime]);
 
   const timeOptions = useMemo(() => {
-    const now = new Date();
-    const isSelectedDateToday = selectedDate.getTime() === today.getTime();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const { todayStr, currentMinutes } = getISTDateAndMinutes();
+    const isSelectedDateToday = dateStr === todayStr;
     const options = [];
     for (let m = 7 * 60; m < 22 * 60; m += 10) {
       if (isSelectedDateToday && m <= currentMinutes) continue;
@@ -234,7 +262,7 @@ export default function Booking() {
       options.push(`${hh}:${mm}`);
     }
     return options;
-  }, [selectedDate, today]);
+  }, [dateStr]);
 
   useEffect(() => {
     if (mode !== "time" || !timeInput) return;
@@ -549,6 +577,7 @@ export default function Booking() {
             <h3 className="text-[15px] font-semibold text-navy mb-4 text-center">Pick a Date</h3>
             <input type="date"
               min={toDateStr(today)}
+              max={toDateStr(addDays(today, 90))}
               value={toDateStr(selectedDate)}
               onChange={e => {
                 if (e.target.value) handleDatePick(new Date(e.target.value + "T00:00:00"));

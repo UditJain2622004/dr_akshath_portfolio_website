@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Home from './pages/home';
 import Admin from './pages/admin';
@@ -15,14 +15,43 @@ function AdminRoute() {
   return <Admin />;
 }
 
+function NotFound() {
+  return (
+    <div className="h-[100dvh] flex flex-col items-center justify-center p-6 text-center" style={{ background: '#f8fafc' }}>
+      <h1 className="text-4xl font-bold text-slate-800">404</h1>
+      <p className="text-slate-500 mt-2">Page not found</p>
+      <a href="/" className="mt-4 px-4 py-2 bg-teal-700 text-white rounded-xl text-sm font-semibold">Back to Home</a>
+    </div>
+  );
+}
 
 export default function App() {
+  const hostname = window.location.hostname.toLowerCase();
+  const isAdminSubdomain = hostname.startsWith('admin.') || import.meta.env.VITE_IS_ADMIN_SITE === 'true';
+
+  if (isAdminSubdomain) {
+    return (
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/*" element={<AdminRoute />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    );
+  }
+
   return (
     <AuthProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/admin/*" element={<AdminRoute />} />
+          {import.meta.env.DEV ? (
+            <Route path="/admin/*" element={<AdminRoute />} />
+          ) : (
+            <Route path="/admin/*" element={<NotFound />} />
+          )}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </AuthProvider>

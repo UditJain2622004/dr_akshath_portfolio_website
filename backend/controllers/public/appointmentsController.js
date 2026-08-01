@@ -3,6 +3,7 @@ import { normalizePhone } from '../../_utils/phoneUtils.js';
 import { generateSlotTimes, buildSlotId, classifyBookingDate, parseTime } from '../../_utils/slotGenerator.js';
 import { checkDoctorLeave } from '../../_utils/leaveChecker.js';
 import { sendError, sendSuccess, validateRequired, isValidDate, isValidTime } from '../../_utils/apiHelpers.js';
+import { verifyAuth } from '../../_utils/authMiddleware.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'completed'];
@@ -29,7 +30,7 @@ async function handleGet(req, res) {
       } catch (err) {
         return sendError(res, 400, err.message);
       }
-      const type = await detectFollowUp(normalizedPhone);
+      const type = await detectFollowUp(normalizedPhone, date);
       return sendSuccess(res, { type });
     }
 
@@ -40,7 +41,13 @@ async function handleGet(req, res) {
     }
 
     if (patientPhone) {
-      query = query.where('patientId', '==', patientPhone);
+      let normalizedPhone;
+      try {
+        normalizedPhone = normalizePhone(patientPhone);
+      } catch (err) {
+        return sendError(res, 400, err.message);
+      }
+      query = query.where('patientId', '==', normalizedPhone);
     }
 
     if (status) {
@@ -117,7 +124,7 @@ async function handlePost(req, res) {
       return sendError(res, 400, 'Invalid time slot. This time is not available for this clinic.');
     }
 
-    const appointmentType = await detectFollowUp(patientPhone);
+    const appointmentType = await detectFollowUp(patientPhone, date);
     const bookingType = dateClass.isInstant ? 'instant' : 'request';
     const slotId = buildSlotId(clinicId, date, time);
     const slotRef = db.collection('doctorSlots').doc(slotId);
@@ -130,10 +137,7 @@ async function handlePost(req, res) {
         .where('status', 'in', ACTIVE_STATUSES);
       const allApptSnapshot = await transaction.get(allApptQuery);
 
-      let slotDoc = null;
-      if (dateClass.isInstant) {
-        slotDoc = await transaction.get(slotRef);
-      }
+      const slotDoc = await transaction.get(slotRef);
 
       // ── VALIDATION ──
       const slotMinutes = parseTime(time);
@@ -145,7 +149,7 @@ async function handlePost(req, res) {
         if (diff < CROSS_CLINIC_GAP && appt.clinicId !== clinicId) throw new Error('TRAVEL_BUFFER_CONFLICT');
       }
 
-      if (slotDoc && slotDoc.exists && slotDoc.data().booked) {
+      if (slotDoc.exists && slotDoc.data().booked) {
         throw new Error('SLOT_ALREADY_BOOKED');
       }
 
@@ -210,6 +214,9 @@ async function handlePost(req, res) {
 }
 
 async function handlePatch(req, res) {
+  const authResult = await verifyAuth(req);
+  if (authResult.error) return sendError(res, authResult.status, authResult.error);
+
   const { appointmentId, action } = req.body;
 
   const validationError = validateRequired(req.body, ['appointmentId', 'action']);
@@ -249,6 +256,8 @@ async function handlePatch(req, res) {
     if ((action === 'reject' || action === 'cancel') && appointment.bookingType === 'instant') {
       const slotId = buildSlotId(appointment.clinicId, appointment.appointmentDate, appointment.timeSlot);
       const slotRef = db.collection('doctorSlots').doc(slotId);
+      const slotDoc = await slotRef.get();
+      const currentAppointmentId = slotDoc.exists ? slotDoc.data().appointmentId : null;
 
       const activeAtSameTimeSnapshot = await db.collection('appointments')
         .where('appointmentDate', '==', appointment.appointmentDate)
@@ -256,14 +265,16 @@ async function handlePatch(req, res) {
         .where('status', 'in', ACTIVE_STATUSES)
         .get();
 
-      const otherActive = activeAtSameTimeSnapshot.docs.find((doc) => doc.id !== appointmentId);
+      const otherActive = activeAtSameTimeSnapshot.docs.find((doc) => doc.id !== appointmentId && doc.data().clinicId === appointment.clinicId);
 
       const batch = db.batch();
       batch.update(appointmentRef, updateData);
-      batch.set(slotRef, {
-        booked: !!otherActive,
-        appointmentId: otherActive ? otherActive.id : null,
-      }, { merge: true });
+      if (currentAppointmentId !== 'BLOCKED') {
+        batch.set(slotRef, {
+          booked: !!otherActive,
+          appointmentId: otherActive ? otherActive.id : null,
+        }, { merge: true });
+      }
       await batch.commit();
 
       return sendSuccess(res, {
@@ -281,29 +292,36 @@ async function handlePatch(req, res) {
   }
 }
 
-async function detectFollowUp(patientId) {
+async function detectFollowUp(patientId, targetDateStr) {
   try {
-    const recentAppointments = await db.collection('appointments').where('patientId', '==', patientId).get();
-    if (recentAppointments.empty) return 'new';
+    const refDate = targetDateStr || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const refMs = new Date(refDate + 'T00:00:00+05:30').getTime();
+    const minMs = refMs - 7 * 24 * 60 * 60 * 1000;
+    const minDateStr = new Date(minMs).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
-    const matching = recentAppointments.docs
-      .map((doc) => doc.data())
-      .filter((a) => ['confirmed', 'completed'].includes(a.status))
-      .sort((a, b) => {
-        const dateDiff = (b.appointmentDate || '').localeCompare(a.appointmentDate || '');
-        if (dateDiff !== 0) return dateDiff;
-        return (b.timeSlot || '').localeCompare(a.timeSlot || '');
-      });
+    let snapshot;
+    try {
+      snapshot = await db.collection('appointments')
+        .where('patientId', '==', patientId)
+        .where('appointmentDate', '>=', minDateStr)
+        .where('appointmentDate', '<=', refDate)
+        .get();
+    } catch {
+      snapshot = await db.collection('appointments').where('patientId', '==', patientId).get();
+    }
 
-    if (matching.length === 0) return 'new';
+    if (snapshot.empty) return 'new';
 
-    const lastDate = new Date(matching[0].appointmentDate + 'T00:00:00');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const hasRecentFollowup = snapshot.docs.some((doc) => {
+      const a = doc.data();
+      return ['confirmed', 'completed'].includes(a.status) &&
+        a.appointmentDate >= minDateStr &&
+        a.appointmentDate <= refDate;
+    });
 
-    const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays <= 7 ? 'followup' : 'new';
-  } catch {
+    return hasRecentFollowup ? 'followup' : 'new';
+  } catch (error) {
+    console.error('detectFollowUp error:', error);
     return 'new';
   }
 }

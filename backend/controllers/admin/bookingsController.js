@@ -43,18 +43,22 @@ async function handleDelete(req, res) {
 
     if (appointment.bookingType === 'instant') {
       const slotRef = db.collection('doctorSlots').doc(buildSlotId(appointment.clinicId, appointment.appointmentDate, appointment.timeSlot));
+      const slotDoc = await slotRef.get();
+      const currentAppointmentId = slotDoc.exists ? slotDoc.data().appointmentId : null;
 
-      const activeAtSameTimeSnapshot = await db.collection('appointments')
-        .where('appointmentDate', '==', appointment.appointmentDate)
-        .where('timeSlot', '==', appointment.timeSlot)
-        .where('status', 'in', ACTIVE_STATUSES)
-        .get();
-      const otherActive = activeAtSameTimeSnapshot.docs.find((d) => d.id !== appointmentId);
+      if (currentAppointmentId !== 'BLOCKED') {
+        const activeAtSameTimeSnapshot = await db.collection('appointments')
+          .where('appointmentDate', '==', appointment.appointmentDate)
+          .where('timeSlot', '==', appointment.timeSlot)
+          .where('status', 'in', ACTIVE_STATUSES)
+          .get();
+        const otherActive = activeAtSameTimeSnapshot.docs.find((d) => d.id !== appointmentId && d.data().clinicId === appointment.clinicId);
 
-      batch.set(slotRef, {
-        booked: !!otherActive,
-        appointmentId: otherActive ? otherActive.id : null,
-      }, { merge: true });
+        batch.set(slotRef, {
+          booked: !!otherActive,
+          appointmentId: otherActive ? otherActive.id : null,
+        }, { merge: true });
+      }
     }
 
     await batch.commit();
@@ -89,37 +93,63 @@ async function handleGet(req, res) {
     const countSnapshot = await query.count().get();
     const totalCount = countSnapshot.data().count;
 
-    // Apply sorting: appointmentDate descending, then timeSlot ascending
-    query = query.orderBy('appointmentDate', 'desc').orderBy('timeSlot', 'asc');
+    const pageSize = parseInt(limit);
+    let paginatedDocs = [];
+    let hasMore = false;
 
-    // Apply pagination start document cursor if lastId is provided
-    if (lastId) {
-      const lastDoc = await db.collection('appointments').doc(lastId).get();
-      if (lastDoc.exists) {
-        query = query.startAfter(lastDoc);
+    try {
+      let orderedQuery = query.orderBy('appointmentDate', 'desc').orderBy('timeSlot', 'asc');
+      if (lastId) {
+        const lastDoc = await db.collection('appointments').doc(lastId).get();
+        if (lastDoc.exists) {
+          orderedQuery = orderedQuery.startAfter(lastDoc);
+        }
+      }
+      const snapshot = await orderedQuery.limit(pageSize + 1).get();
+      const docs = snapshot.docs;
+      hasMore = docs.length > pageSize;
+      const sliced = hasMore ? docs.slice(0, pageSize) : docs;
+      paginatedDocs = sliced.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+          confirmedAt: data.confirmedAt?.toDate?.()?.toISOString() || null,
+        };
+      });
+    } catch (indexErr) {
+      if (indexErr.message && (indexErr.message.includes('index') || indexErr.code === 3)) {
+        console.warn('Firestore index missing for query, using in-memory sort fallback:', indexErr.message);
+        const snapshot = await query.get();
+        let allDocs = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+            confirmedAt: data.confirmedAt?.toDate?.()?.toISOString() || null,
+          };
+        });
+        allDocs.sort((a, b) => {
+          const dateDiff = (b.appointmentDate || '').localeCompare(a.appointmentDate || '');
+          if (dateDiff !== 0) return dateDiff;
+          return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+        });
+        let startIndex = 0;
+        if (lastId) {
+          const idx = allDocs.findIndex((d) => d.id === lastId);
+          if (idx !== -1) startIndex = idx + 1;
+        }
+        const sliced = allDocs.slice(startIndex, startIndex + pageSize + 1);
+        hasMore = sliced.length > pageSize;
+        paginatedDocs = hasMore ? sliced.slice(0, pageSize) : sliced;
+      } else {
+        throw indexErr;
       }
     }
 
-    // Query limit + 1 to check if there is a next page
-    const pageSize = parseInt(limit);
-    query = query.limit(pageSize + 1);
-
-    const snapshot = await query.get();
-    const docs = snapshot.docs;
-    const hasMore = docs.length > pageSize;
-    const paginatedDocs = hasMore ? docs.slice(0, pageSize) : docs;
-
-    const bookings = paginatedDocs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
-        confirmedAt: data.confirmedAt?.toDate?.()?.toISOString() || null,
-      };
-    });
-
-    const clinicIds = [...new Set(bookings.map((b) => b.clinicId).filter(Boolean))];
+    const clinicIds = [...new Set(paginatedDocs.map((b) => b.clinicId).filter(Boolean))];
     const clinicNames = {};
 
     if (clinicIds.length > 0) {
@@ -129,7 +159,7 @@ async function handleGet(req, res) {
       });
     }
 
-    const resultBookings = bookings.map((b) => ({
+    const resultBookings = paginatedDocs.map((b) => ({
       ...b,
       clinicName: clinicNames[b.clinicId] || b.clinicId,
     }));
@@ -187,6 +217,8 @@ async function handlePost(req, res) {
     const appointmentRef = db.collection('appointments').doc();
     const slotRef = db.collection('doctorSlots').doc(buildSlotId(clinicId, date, time));
 
+    const followUpType = await detectFollowUp(patientPhone, date);
+
     await db.runTransaction(async (transaction) => {
       // ── ALL READS FIRST ──
       const allApptQuery = db.collection('appointments')
@@ -194,10 +226,7 @@ async function handlePost(req, res) {
         .where('status', 'in', ACTIVE_STATUSES);
       const allApptSnapshot = await transaction.get(allApptQuery);
 
-      let slotDoc = null;
-      if (dateClass.isInstant) {
-        slotDoc = await transaction.get(slotRef);
-      }
+      const slotDoc = await transaction.get(slotRef);
 
       // ── VALIDATION ──
       const slotMinutes = parseTime(time);
@@ -209,10 +238,9 @@ async function handlePost(req, res) {
         if (diff < CROSS_CLINIC_GAP && appt.clinicId !== clinicId) throw new Error('TRAVEL_BUFFER_CONFLICT');
       }
 
-      if (slotDoc && slotDoc.exists && slotDoc.data().booked) throw new Error('SLOT_ALREADY_BOOKED');
+      if (slotDoc.exists && slotDoc.data().booked) throw new Error('SLOT_ALREADY_BOOKED');
 
       // ── ALL WRITES ──
-      const followUpType = await detectFollowUp(patientPhone);
       transaction.set(appointmentRef, {
         patientId: patientPhone, clinicId, patientName, patientPhone,
         patientEmail: patientEmail || null, appointmentDate: date,
@@ -299,20 +327,25 @@ async function handlePatch(req, res) {
 
       if ((action === 'reject' || action === 'cancel') && appointment.bookingType === 'instant') {
         const slotRef = db.collection('doctorSlots').doc(buildSlotId(appointment.clinicId, appointment.appointmentDate, appointment.timeSlot));
+        const slotDoc = await slotRef.get();
+        const currentAppointmentId = slotDoc.exists ? slotDoc.data().appointmentId : null;
+
         const activeAtSameTimeSnapshot = await db.collection('appointments')
           .where('appointmentDate', '==', appointment.appointmentDate)
           .where('timeSlot', '==', appointment.timeSlot)
           .where('status', 'in', ACTIVE_STATUSES)
           .get();
 
-        const otherActive = activeAtSameTimeSnapshot.docs.find((doc) => doc.id !== appointmentId);
+        const otherActive = activeAtSameTimeSnapshot.docs.find((doc) => doc.id !== appointmentId && doc.data().clinicId === appointment.clinicId);
 
         const batch = db.batch();
         batch.update(appointmentRef, updateData);
-        batch.set(slotRef, {
-          booked: !!otherActive,
-          appointmentId: otherActive ? otherActive.id : null,
-        }, { merge: true });
+        if (currentAppointmentId !== 'BLOCKED') {
+          batch.set(slotRef, {
+            booked: !!otherActive,
+            appointmentId: otherActive ? otherActive.id : null,
+          }, { merge: true });
+        }
         await batch.commit();
 
         return sendSuccess(res, {
@@ -326,9 +359,13 @@ async function handlePatch(req, res) {
 
     if (patientName) updateData.patientName = patientName;
     if (patientPhone) {
-      const normalizedPhone = normalizePhone(patientPhone);
-      updateData.patientPhone = normalizedPhone;
-      updateData.patientId = normalizedPhone;
+      try {
+        const normalizedPhone = normalizePhone(patientPhone);
+        updateData.patientPhone = normalizedPhone;
+        updateData.patientId = normalizedPhone;
+      } catch (err) {
+        return sendError(res, 400, err.message);
+      }
     }
     if (patientEmail !== undefined) updateData.patientEmail = patientEmail || null;
     if (clinicId) updateData.clinicId = clinicId;
@@ -358,7 +395,6 @@ async function handlePatch(req, res) {
 
     await appointmentRef.update(updateData);
 
-
     return sendSuccess(res, {
       appointmentId,
       message: 'Appointment updated successfully.',
@@ -374,39 +410,46 @@ async function handleFollowupCheck(req, res) {
   const admin = await requireAdmin(req, res);
   if (!admin) return;
 
-  const { patientPhone } = req.query;
+  const { patientPhone, date } = req.query;
   if (!patientPhone) return sendError(res, 400, 'Missing patientPhone');
 
-  const normalizedPhone = normalizePhone(patientPhone);
-  const type = await detectFollowUp(normalizedPhone);
-  return sendSuccess(res, { type });
+  try {
+    const normalizedPhone = normalizePhone(patientPhone);
+    const type = await detectFollowUp(normalizedPhone, date);
+    return sendSuccess(res, { type });
+  } catch (err) {
+    return sendError(res, 400, err.message);
+  }
 }
 
-async function detectFollowUp(patientId) {
+async function detectFollowUp(patientId, targetDateStr) {
   try {
-    const recentAppointments = await db.collection('appointments')
-      .where('patientId', '==', patientId)
-      .get();
+    const refDate = targetDateStr || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const refMs = new Date(refDate + 'T00:00:00+05:30').getTime();
+    const minMs = refMs - 7 * 24 * 60 * 60 * 1000;
+    const minDateStr = new Date(minMs).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
-    if (recentAppointments.empty) return 'new';
+    let snapshot;
+    try {
+      snapshot = await db.collection('appointments')
+        .where('patientId', '==', patientId)
+        .where('appointmentDate', '>=', minDateStr)
+        .where('appointmentDate', '<=', refDate)
+        .get();
+    } catch {
+      snapshot = await db.collection('appointments').where('patientId', '==', patientId).get();
+    }
 
-    const matching = recentAppointments.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((a) => ['confirmed', 'completed'].includes(a.status))
-      .sort((a, b) => {
-        const dateDiff = (b.appointmentDate || '').localeCompare(a.appointmentDate || '');
-        if (dateDiff !== 0) return dateDiff;
-        return (b.timeSlot || '').localeCompare(a.timeSlot || '');
-      });
+    if (snapshot.empty) return 'new';
 
-    if (matching.length === 0) return 'new';
+    const hasRecentFollowup = snapshot.docs.some((doc) => {
+      const a = doc.data();
+      return ['confirmed', 'completed'].includes(a.status) &&
+        a.appointmentDate >= minDateStr &&
+        a.appointmentDate <= refDate;
+    });
 
-    const lastDate = new Date(matching[0].appointmentDate + 'T00:00:00');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    return diffDays <= 7 ? 'followup' : 'new';
+    return hasRecentFollowup ? 'followup' : 'new';
   } catch (error) {
     console.error('detectFollowUp error:', error);
     return 'new';

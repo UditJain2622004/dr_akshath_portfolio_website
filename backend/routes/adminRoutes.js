@@ -7,6 +7,7 @@ import profileController from "../controllers/admin/profileController.js";
 import slotsController from "../controllers/admin/slotsController.js";
 import scheduleController from "../controllers/admin/scheduleController.js";
 import dashboardController from "../controllers/admin/dashboardController.js";
+import delayController from "../controllers/admin/delayController.js";
 
 const adminRoutes = Router();
 
@@ -18,5 +19,6 @@ adminRoutes.all('/admin/profile', profileController);
 adminRoutes.all('/admin/slots', slotsController);
 adminRoutes.all('/admin/schedule', scheduleController);
 adminRoutes.all('/admin/dashboard', dashboardController);
+adminRoutes.all('/admin/delay', delayController);
 
 export default adminRoutes;
